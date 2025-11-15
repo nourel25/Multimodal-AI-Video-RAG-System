@@ -8,7 +8,7 @@ services:
       - "27007:27017"
 
     volumes:
-      - mongodata:/data/db
+      - multimodal_mongodata:/data/db
 
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
@@ -23,4 +23,4 @@ networks:
   backend:
 
 volumes:
-  mongodata:
+  multimodal_mongodata:

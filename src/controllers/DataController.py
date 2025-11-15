@@ -32,7 +32,7 @@ class DataController(BaseController):
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([str(youtube_url)])
+                ydl.download([youtube_url])
             return True, ResponseSignal.FILE_UPLOAD_SUCCESS.value
         except Exception as e:
             print(f"Download failed: {e}")
