@@ -1,7 +1,11 @@
 import os
+from helpers.config import get_settings, Settings
 
 class BaseController:
     def __init__(self):
+        
+        self.app_settings = get_settings()
+
         # Get project root directory (two levels up)
         self.base_dir = os.path.dirname(os.path.dirname(__file__))
 

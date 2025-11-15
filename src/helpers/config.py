@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     MONGODB_URL: str
     MONGODB_DATABASE: str
     
+    MAX_VIDEO_SIZE_MB: int
+    
     class Config:
         env_file = ".env"
         

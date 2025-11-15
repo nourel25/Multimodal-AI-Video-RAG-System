@@ -15,16 +15,27 @@ async def ingest_urls(request: Request, user_id: str, ingest_request: IngestRequ
     youtube_url = str(ingest_request.url)
     do_reset = ingest_request.do_reset
 
+    valid, v_signal = data_controller.validate_uploaded_video(youtube_url)
+    
+    if not valid:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "status": "error",
+                "signal": v_signal,
+            }
+        )
+        
     audio_path = data_controller.generate_audio_path(user_id)
 
-    success, signal = data_controller.download_youtube_audio(youtube_url, audio_path)
+    success, d_signal = data_controller.download_youtube_audio(youtube_url, audio_path)
             
     if not success:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
                 "status": "error",
-                "signal": signal,
+                "signal": d_signal,
             }
         )
         
@@ -45,7 +56,7 @@ async def ingest_urls(request: Request, user_id: str, ingest_request: IngestRequ
         status_code=status.HTTP_200_OK,
         content={
             "status": "success",
-            "signal": signal,
+            "signal": d_signal,
             "audio_path": audio_path,
         }
     )
