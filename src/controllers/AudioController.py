@@ -3,21 +3,12 @@ from faster_whisper import WhisperModel
 from pathlib import Path
 import uuid
 from models.enums.ResponseEnum import ResponseSignal
-import torch
 
 
 class AudioController(BaseController):
     def __init__(self):
         super().__init__()
-        # Check for GPU
-        if torch.cuda.is_available():
-            device = "cuda"
-            print("✅ CUDA detected: Using GPU for transcription")
-        else:
-            device = "cpu"
-            print("⚠️ CUDA not detected: Using CPU for transcription (slower)")
-
-        self.model = WhisperModel('small', device=device)
+        self.model = WhisperModel('small', device='cpu')
             
     def generate_transcript_path(self, user_id: str):
         user_dir = Path(self.transcripts_dir) / user_id

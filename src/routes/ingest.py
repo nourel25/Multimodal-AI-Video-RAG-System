@@ -5,6 +5,8 @@ from models.VideoModel import VideoModel
 from models.db_schemas import Video
 from .schemas.ingest import IngestRequest
 from controllers.AudioController import AudioController
+from models.UserModel import UserModel
+
 
 ingest_router = APIRouter()
 
@@ -26,6 +28,11 @@ async def ingest_urls(request: Request, user_id: str, ingest_request: IngestRequ
                 "signal": v_signal,
             }
         )
+        
+    user_model = UserModel(request.app.db_client)
+    user = await user_model.get_user_or_insert_one(
+        user_id=user_id
+    )
         
     audio_path = data_controller.generate_audio_path(user_id)
 
@@ -57,9 +64,10 @@ async def ingest_urls(request: Request, user_id: str, ingest_request: IngestRequ
 
     video = await video_model.insert_video(
         Video(
-            user_id=user_id,
+            video_user_id=user.id,
             youtube_url=youtube_url,
-            file_path=audio_path
+            audio_path=audio_path,
+            transcript_path=transcript_path
         )
     )
     
@@ -67,7 +75,13 @@ async def ingest_urls(request: Request, user_id: str, ingest_request: IngestRequ
         status_code=status.HTTP_200_OK,
         content={
             "status": "success",
-            "signal": d_signal,
+            "signals": {
+                "validation": v_signal,
+                "download": d_signal,
+                "transcription": t_signal
+            },
             "audio_path": audio_path,
+            "transcript_path": transcript_path
         }
     )
+

@@ -5,9 +5,4 @@ yt-dlp==2025.11.12
 motor==3.7.1
 faster-whisper==1.2.1
 
-# PyTorch with CUDA support (compatible with CUDA 12.x)
---find-links https://download.pytorch.org/whl/cu121
-torch==2.1.0
-torchvision==0.16.0
-torchaudio==2.1.0
 

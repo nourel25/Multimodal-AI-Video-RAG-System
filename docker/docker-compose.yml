@@ -1,23 +1,16 @@
 services:
   mongodb:
     image: mongo:7.0
-
     container_name: mongodb
-
     ports:
       - "27007:27017"
-
-    volumes:
-      - multimodal_mongodata:/data/db
-
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
-
+    volumes:
+      - multimodal_mongodata:/data/db
     networks:
       - backend
-
-    restart: always
 
 networks:
   backend:
