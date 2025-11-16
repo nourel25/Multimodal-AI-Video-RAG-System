@@ -12,3 +12,7 @@ class BaseController:
         # Define audios directory
         self.audios_dir = os.path.join(self.base_dir, "assets", "audios")
         os.makedirs(self.audios_dir, exist_ok=True)
+        
+        # Define transcript directory
+        self.transcripts_dir = os.path.join(self.base_dir, "assets", "transcripts")
+        os.makedirs(self.audios_dir, exist_ok=True)

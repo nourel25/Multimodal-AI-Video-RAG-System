@@ -4,6 +4,7 @@ import yt_dlp
 import uuid
 from models import ResponseSignal 
 
+
 class DataController(BaseController):
     def __init__(self):
         super().__init__()
@@ -37,11 +38,11 @@ class DataController(BaseController):
         unique_name = f"{uuid.uuid4().hex}.mp3"
         return str(user_dir / unique_name)
     
-    def download_youtube_audio(self, youtube_url: str, file_path: str):
+    def download_youtube_audio(self, youtube_url: str, audio_path: str):
 
         ydl_opts = {
             'format': 'bestaudio/best',
-            'outtmpl': file_path.replace(".mp3", ""), 
+            'outtmpl': audio_path.replace(".mp3", ""), 
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
@@ -57,4 +58,6 @@ class DataController(BaseController):
             return True, ResponseSignal.VIDEO_UPLOAD_SUCCESS.value
         except Exception as e:
             print(f"Download failed: {e}")
-            return False, ResponseSignal.VIDEO_UPLOAD_FAILED.value        
+            return False, ResponseSignal.VIDEO_UPLOAD_FAILED.value 
+        
+       

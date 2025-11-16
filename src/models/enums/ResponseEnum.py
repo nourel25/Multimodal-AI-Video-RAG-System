@@ -7,3 +7,5 @@ class ResponseSignal(Enum):
     PROCESSING_FAILED = "processing_failed"
     VIDEO_SIZE_EXCEEDED = "video_size_exceeded"
     VIDEO_VALIDATED_SUCCESS = "video_validate_successfully"
+    AUDIO_TRANSCRIPT_SUCCESS = "audio_transcript_success"
+    AUDIO_TRANSCRIPT_FAILED = "audio_transcript_failed"

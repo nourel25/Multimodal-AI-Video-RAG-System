@@ -4,6 +4,7 @@ from controllers.DataController import DataController
 from models.VideoModel import VideoModel
 from models.db_schemas import Video
 from .schemas.ingest import IngestRequest
+from controllers.AudioController import AudioController
 
 ingest_router = APIRouter()
 
@@ -28,15 +29,25 @@ async def ingest_urls(request: Request, user_id: str, ingest_request: IngestRequ
         
     audio_path = data_controller.generate_audio_path(user_id)
 
-    success, d_signal = data_controller.download_youtube_audio(youtube_url, audio_path)
+    d_success, d_signal = data_controller.download_youtube_audio(youtube_url, audio_path)
             
-    if not success:
+    if not d_success:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
                 "status": "error",
                 "signal": d_signal,
             }
+        )
+        
+    audio_controller = AudioController()
+    transcript_path = audio_controller.generate_transcript_path(user_id)
+    t_success, t_signal = audio_controller.transcribe_audio(audio_path, transcript_path)
+    
+    if not t_success:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"status": "error", "signal": t_signal}
         )
         
     video_model = VideoModel(request.app.db_client)
