@@ -5,7 +5,7 @@ import uuid
 from models import ResponseSignal 
 
 
-class DataController(BaseController):
+class VideoController(BaseController):
     def __init__(self):
         super().__init__()
     

@@ -1,2 +1,2 @@
-from .DataController import DataController
+from .VideoController import VideoController
 from .AudioController import AudioController

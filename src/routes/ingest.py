@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status, Request
 from fastapi.responses import JSONResponse
-from controllers.DataController import DataController 
+from controllers.VideoController import VideoController 
 from models.VideoModel import VideoModel
 from models.db_schemas import Video
 from .schemas.ingest import IngestRequest
@@ -14,11 +14,11 @@ ingest_router = APIRouter()
 
 @ingest_router.post("/ingest/{user_id}")
 async def ingest_urls(request: Request, user_id: str, ingest_request: IngestRequest):
-    data_controller = DataController()
+    video_controller = VideoController()
 
     youtube_url = str(ingest_request.youtube_url)
 
-    valid, v_signal = data_controller.validate_uploaded_video(youtube_url)
+    valid, v_signal = video_controller.validate_uploaded_video(youtube_url)
     
     if not valid:
         return JSONResponse(
@@ -51,7 +51,7 @@ async def ingest_urls(request: Request, user_id: str, ingest_request: IngestRequ
 @ingest_router.post("/process/{user_id}")
 async def process_audio(request: Request, user_id: str, process_request: ProcessRequest):
         
-    data_controller = DataController()
+    video_controller = VideoController()
     user_model = UserModel(request.app.db_client)
     
     user = await user_model.get_user(user_id)
@@ -60,9 +60,9 @@ async def process_audio(request: Request, user_id: str, process_request: Process
     youtube_url = process_request.youtube_url
     video_user_id = user.id
 
-    audio_path = data_controller.generate_audio_path(user_id)
+    audio_path = video_controller.generate_audio_path(user_id)
 
-    d_success, d_signal = data_controller.download_youtube_audio(youtube_url, audio_path)
+    d_success, d_signal = video_controller.download_youtube_audio(youtube_url, audio_path)
             
     if not d_success:
         return JSONResponse(
