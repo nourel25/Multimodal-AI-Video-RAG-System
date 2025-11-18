@@ -23,3 +23,12 @@ class VideoModel(BaseDataModel):
         })
         
         return result.deleted_count
+    
+    async def get_videos_by_user_id(self, video_user_id: ObjectId):
+        cursor = self.collection.find({
+            'video_user_id': video_user_id  
+        })
+        
+        docs = await cursor.to_list(length=None)
+        
+        return [Video(**doc) for doc in docs]

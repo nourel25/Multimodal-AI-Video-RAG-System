@@ -90,10 +90,13 @@ async def process_audio(request: Request, user_id: str, process_request: Process
             content={"status": "error", "signal": t_signal}
         )
         
-    video_model = VideoModel(request.app.db_client)
-
-    if do_reset == 1:
-        await video_model.delete_video_by_user_id(video_user_id)
+    video_model = VideoModel(
+        request.app.db_client
+    )
+    
+    chunk_model = ChunkModel(
+        db_client=request.app.db_client
+    )
         
     chunk_controller = ChunkController()
     file_content = chunk_controller.get_file_content(transcript_path)
@@ -111,6 +114,13 @@ async def process_audio(request: Request, user_id: str, process_request: Process
                 "signal": ResponseSignal.PROCESSING_FAILED.value
             }
         )
+        
+    if do_reset == 1:
+        prev_videos = await video_model.get_videos_by_user_id(video_user_id)
+        for prev_video in prev_videos:
+            await chunk_model.delete_chunks_by_video_id(prev_video.id)
+            
+        await video_model.delete_video_by_user_id(video_user_id)
       
         
     video = await video_model.insert_video(
@@ -133,9 +143,6 @@ async def process_audio(request: Request, user_id: str, process_request: Process
         for i, chunk in enumerate(file_chunks)
     ]
 
-    chunk_model = ChunkModel(
-        db_client=request.app.db_client
-    )
     
     no_docs = await chunk_model.insert_many_chunks(
         chunks=file_chunks_docs
