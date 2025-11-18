@@ -14,13 +14,13 @@ class UserModel(BaseDataModel):
 
         return user
     
-    async def get_user_or_insert_one(self, user_id: str):
+    async def get_user_or_insert_one(self, user_id: str, youtube_url: str):
         record = await self.collection.find_one({
             "user_id": user_id
         })
         
         if record is None:
-            user = User(user_id=user_id)
+            user = User(user_id=user_id, youtube_url=youtube_url)
             user = await self.insert_user(user=user)
             
             return user

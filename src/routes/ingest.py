@@ -35,7 +35,7 @@ async def ingest_urls(request: Request, user_id: str, ingest_request: IngestRequ
         
     user_model = UserModel(request.app.db_client)
     user = await user_model.get_user_or_insert_one(
-        user_id=user_id
+        user_id=user_id, youtube_url=youtube_url
     )
         
     
@@ -61,10 +61,10 @@ async def process_audio(request: Request, user_id: str, process_request: Process
     user = await user_model.get_user(user_id)
     
     do_reset = process_request.do_reset
-    youtube_url = process_request.youtube_url
     chunk_size = process_request.chunk_size
     overlap_size = process_request.overlap_size
     
+    youtube_url = user.youtube_url
     video_user_id = user.id
 
     audio_path = video_controller.generate_audio_path(user_id)
