@@ -6,4 +6,5 @@ motor==3.7.1
 faster-whisper==1.2.1
 langchain-text-splitters==1.0.0
 langchain-community==0.4.1
+qdrant-client==1.16.0
 

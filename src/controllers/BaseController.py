@@ -16,3 +16,18 @@ class BaseController:
         # Define transcript directory
         self.transcripts_dir = os.path.join(self.base_dir, "assets", "transcripts")
         os.makedirs(self.audios_dir, exist_ok=True)
+        
+        # Define database directory
+        self.transcripts_dir = os.path.join(self.base_dir, "assets", "database")
+        os.makedirs(self.audios_dir, exist_ok=True)
+        
+    def get_database_path(self, db_name: str):
+
+        database_path = os.path.join(
+            self.database_dir, db_name
+        )
+
+        if not os.path.exists(database_path):
+            os.makedirs(database_path)
+
+        return database_path

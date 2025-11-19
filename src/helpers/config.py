@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     
     MAX_VIDEO_SIZE_MB: int
     
+    VECTOR_DB_BACKEND : str
+    VECTOR_DB_PATH : str
+    VECTOR_DB_DISTANCE_METHOD: str = None
+    
     class Config:
         env_file = ".env"
         
