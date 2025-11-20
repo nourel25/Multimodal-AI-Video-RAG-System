@@ -33,7 +33,7 @@ class UserModel(BaseDataModel):
         result = await self.collection.find_one_and_update(
             {'_id': user_id},
             {
-                "$addToSet": {"yotube_urls": youtube_url}
+                "$addToSet": {"youtube_urls": youtube_url}
             },
             return_document=ReturnDocument.AFTER
         )

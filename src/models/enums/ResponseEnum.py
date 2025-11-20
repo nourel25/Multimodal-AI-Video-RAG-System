@@ -9,3 +9,4 @@ class ResponseSignal(Enum):
     VIDEO_VALIDATED_SUCCESS = "video_validate_successfully"
     AUDIO_TRANSCRIPT_SUCCESS = "audio_transcript_success"
     AUDIO_TRANSCRIPT_FAILED = "audio_transcript_failed"
+    NO_URLS_FOUND_FOR_USER = "no_urls_found_for_user"
