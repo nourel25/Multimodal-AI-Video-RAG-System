@@ -1,16 +1,26 @@
-from fastapi import APIRouter, status, Request
+from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
-from controllers.VideoController import VideoController 
-from models.VideoModel import VideoModel
-from models.db_schemas import Video
-from .schemas.ingest import IngestRequest
+
+# Controllers
+from controllers.VideoController import VideoController
 from controllers.AudioController import AudioController
-from models.UserModel import UserModel
-from .schemas.process import ProcessRequest
-from models.ChunkModel import ChunkModel
-from models.db_schemas import Chunk
 from controllers.ChunkController import ChunkController
+
+# Models
+from models.UserModel import UserModel
+from models.VideoModel import VideoModel
+from models.ChunkModel import ChunkModel
+
+# DB Schemas
+from models.db_schemas import Video, Chunk
+
+# Request Schemas
+from .schemas.ingest import IngestRequest
+from .schemas.process import ProcessRequest
+
+# Enums
 from models.enums.ResponseEnum import ResponseSignal
+
 
 
 ingest_router = APIRouter()
