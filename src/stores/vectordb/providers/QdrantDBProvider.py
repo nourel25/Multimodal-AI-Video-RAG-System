@@ -6,9 +6,9 @@ import logging
 
 
 class QdrantDBProvider(VectorDBInterface):
-    def __init__(self, dp_path: str, distance_method: str):
+    def __init__(self, db_path: str, distance_method: str):
         self.client = None
-        self.dp_path = dp_path
+        self.db_path = db_path
         self.distance_method = None
         
         if distance_method == DistanceMethodEnums.COSINE.value:
@@ -20,7 +20,7 @@ class QdrantDBProvider(VectorDBInterface):
 
             
     def connect(self):
-        self.client = QdrantClient(path=self.dp_path)
+        self.client = QdrantClient(path=self.db_path)
         
     def diconnect(self):
         self.client = None        

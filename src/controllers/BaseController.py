@@ -18,7 +18,7 @@ class BaseController:
         os.makedirs(self.audios_dir, exist_ok=True)
         
         # Define database directory
-        self.transcripts_dir = os.path.join(self.base_dir, "assets", "database")
+        self.database_dir = os.path.join(self.base_dir, "assets", "database")
         os.makedirs(self.audios_dir, exist_ok=True)
         
     def get_database_path(self, db_name: str):

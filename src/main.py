@@ -3,7 +3,7 @@ from routes import base, ingest
 from motor.motor_asyncio import AsyncIOMotorClient
 from helpers.config import get_settings
 from contextlib import asynccontextmanager
-from stores.vectordb.VectorDPBroviderFactory import VectorDBProviderFactory
+from stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
 
 
 @asynccontextmanager
