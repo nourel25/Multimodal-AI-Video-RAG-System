@@ -1,6 +1,8 @@
 from .BaseDataModel import BaseDataModel
 from .db_schemas import User
 from .enums.DataBaseEnum import DataBaseEnum
+from bson import ObjectId
+from pymongo import ReturnDocument
 
 
 class UserModel(BaseDataModel):
@@ -14,18 +16,29 @@ class UserModel(BaseDataModel):
 
         return user
     
-    async def get_user_or_insert_one(self, user_id: str, youtube_url: str):
+    async def get_user_or_insert_one(self, user_id: str):
         record = await self.collection.find_one({
             "user_id": user_id
         })
         
         if record is None:
-            user = User(user_id=user_id, youtube_url=youtube_url)
+            user = User(user_id=user_id)
             user = await self.insert_user(user=user)
             
             return user
         
         return User(**record)
+    
+    async def insert_youtube_url(self, user_id: ObjectId, youtube_url: str):
+        result = await self.collection.find_one_and_update(
+            {'_id': user_id},
+            {
+                "$addToSet": {"yotube_urls": youtube_url}
+            },
+            return_document=ReturnDocument.AFTER
+        )
+        
+        return User(**result)
     
     async def get_user(self, user_id: str):
         record = await self.collection.find_one({

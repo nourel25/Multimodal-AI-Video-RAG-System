@@ -19,35 +19,38 @@ ingest_router = APIRouter()
 @ingest_router.post("/ingest/{user_id}")
 async def ingest_urls(request: Request, user_id: str, ingest_request: IngestRequest):
     video_controller = VideoController()
-
-    youtube_url = str(ingest_request.youtube_url)
-
-    valid, v_signal = video_controller.validate_uploaded_video(youtube_url)
-    
-    if not valid:
-        return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content={
-                "status": "error",
-                "signal": v_signal,
-            }
-        )
-        
     user_model = UserModel(request.app.db_client)
-    user = await user_model.get_user_or_insert_one(
-        user_id=user_id, youtube_url=youtube_url
-    )
+
+    youtube_urls = ingest_request.youtube_urls
+
+    inserted_urls = []
+    failed_urls = []
+
+    for youtube_url in youtube_urls:
+        youtube_url = str(youtube_url)
         
+        valid, v_signal = video_controller.validate_uploaded_video(youtube_url)
+    
+        if not valid:
+            failed_urls.append({"url": youtube_url, "signal": v_signal})
+            continue
+        
+    
+        user = await user_model.get_user_or_insert_one(
+            user_id=user_id
+        )
+        user = await user_model.insert_youtube_url(user.id, youtube_url)
+        
+        inserted_urls.append(youtube_url)
+
     
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
             "status": "success",
-            "signals": {
-                "validation": v_signal,
-            },
+            "inserted_urls": inserted_urls,
+            "failed_urls": failed_urls,
             "video_user_id": str(user.id),
-            "youtube_url": youtube_url,
         }
     )
 

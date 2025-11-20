@@ -1,5 +1,4 @@
 from pydantic import BaseModel, HttpUrl
-import re
 
 class IngestRequest(BaseModel):
-    youtube_url: HttpUrl
+    youtube_urls: list[HttpUrl]

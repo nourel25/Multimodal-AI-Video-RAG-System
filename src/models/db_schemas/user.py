@@ -6,7 +6,7 @@ import re
 class User(BaseModel):
     id: Optional[ObjectId] = Field(None, alias="_id")
     user_id: str = Field(..., min_length=3)
-    youtube_url: str
+    youtube_urls: Optional[list[str]] = None
     
     @field_validator('user_id')
     def validate_project_id(cls, value):
