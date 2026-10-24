@@ -91,6 +91,10 @@ class Settings(BaseSettings):
     RETRIEVAL_CANDIDATES: int = 20
     RERANK_ENABLED: bool = True
     RERANKER_MODEL: str = "BAAI/bge-reranker-v2-m3"
+    # Reranked sources scoring below this (0-1) are dropped; if none remain the question is
+    # answered "no relevant content" without calling the LLM. Off-topic questions score
+    # ~0.001 and relevant sources 0.08-0.98 on the demo videos. 0 disables the cut-off.
+    RERANK_MIN_SCORE: float = 0.05
 
     # ========================= Vector DB =========================
     VECTOR_DB_BACKEND: str = "QDRANT"
