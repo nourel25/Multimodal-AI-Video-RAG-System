@@ -1,19 +1,100 @@
-services:
-  mongodb:
-    image: mongo:7.0
-    container_name: mongodb
-    ports:
-      - "27007:27017"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
-    volumes:
-      - multimodal_mongodata:/data/db
-    networks:
-      - backend
+# Full stack: API + ARQ worker + MongoDB + Qdrant + Redis (+ optional Ollama).
+#
+# Isolation from other Docker projects on the same machine:
+#   - a fixed project name, so containers/volumes/networks are all prefixed "multimodal-rag_"
+#   - no `container_name`, so nothing can collide with containers from other projects
+#   - every host port is bound to 127.0.0.1 and uses a non-default number (override in .env)
+#
+#   cd docker && cp .env.example .env && docker compose up -d --build
+#   docker compose --profile local-llm up -d     # also run Ollama in a container
+name: multimodal-rag
 
-networks:
-  backend:
+x-app: &app
+  build:
+    context: ..
+    dockerfile: docker/api.Dockerfile
+  image: multimodal-rag-api:2.0.0
+  env_file:
+    - path: ../src/.env
+      required: false
+  environment:
+    MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_INITDB_ROOT_PASSWORD:-change-me}@mongodb:27017/?authSource=admin
+    QDRANT_URL: http://qdrant:6333
+    REDIS_URL: redis://redis:6379
+    JOB_QUEUE_BACKEND: arq
+    OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+  volumes:
+    - assets:/app/assets
+    - models:/models
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  depends_on:
+    mongodb:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    qdrant:
+      condition: service_started
+  restart: unless-stopped
+
+services:
+  api:
+    <<: *app
+    ports:
+      - "127.0.0.1:${API_PORT:-8800}:8000"
+
+  worker:
+    <<: *app
+    command: ["arq", "worker.WorkerSettings"]
+    healthcheck:
+      disable: true
+
+  mongodb:
+    image: mongo:7.0.45
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-change-me}
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "127.0.0.1:${MONGO_PORT:-27037}:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.20.0
+    volumes:
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "127.0.0.1:${QDRANT_PORT:-6343}:6333"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.11-alpine
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6389}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  ollama:
+    profiles: ["local-llm"]
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    # No host port: the host may already run Ollama on 11434. Set OLLAMA_HOST=http://ollama:11434.
+    restart: unless-stopped
 
 volumes:
-  multimodal_mongodata:
+  assets:
+  models:
+  mongo_data:
+  qdrant_data:
+  ollama_data:
