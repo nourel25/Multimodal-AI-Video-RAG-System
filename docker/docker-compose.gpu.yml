@@ -1,0 +1,23 @@
+# Optional GPU override for the embedding model and reranker:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+# Requires an NVIDIA GPU and the NVIDIA Container Toolkit (Docker Desktop: WSL 2 backend).
+# The API and the worker each load the models (~2.2 GB VRAM in fp16 per process).
+x-gpu: &gpu
+  build:
+    args:
+      TORCH_INDEX_URL: https://download.pytorch.org/whl/cu130
+  environment:
+    EMBEDDING_DEVICE: cuda
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+
+services:
+  api:
+    <<: *gpu
+  worker:
+    <<: *gpu

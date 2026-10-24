@@ -1,8 +1,8 @@
 from enum import Enum
 
-class DataBaseEnum(Enum):
 
+class DataBaseEnum(Enum):
     COLLECTION_VIDEO_NAME = "videos"
     COLLECTION_USER_NAME = "users"
     COLLECTION_CHUNK_NAME = "chunks"
-    
+    COLLECTION_JOB_NAME = "jobs"

@@ -1,0 +1,8 @@
+# Local models: embeddings, reranker, Whisper, scene detection.
+# For a CPU-only torch install first:  pip install torch --index-url https://download.pytorch.org/whl/cpu
+sentence-transformers==6.2.0
+faster-whisper==1.2.1
+# PyAV 19 removed `metadata_errors`, which faster-whisper 1.2.1 passes when decoding audio.
+av==18.1.0
+scenedetect==0.7.2
+opencv-python-headless==5.0.0.93

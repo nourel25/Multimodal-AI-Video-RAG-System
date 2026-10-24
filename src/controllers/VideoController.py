@@ -1,63 +1,82 @@
-from .BaseController import BaseController
-from pathlib import Path
+import logging
+from dataclasses import dataclass
+
 import yt_dlp
-import uuid
-from models import ResponseSignal 
+
+from helpers.youtube import watch_url
+from models import ResponseSignal
+
+from .BaseController import BaseController
+
+logger = logging.getLogger(__name__)
+
+# Low-bitrate audio keeps files small (fast uploads to Groq, ~25 MB for an hour) and
+# needs no ffmpeg post-processing: faster-whisper decodes webm/m4a directly.
+AUDIO_FORMAT = "bestaudio[abr<=64]/worstaudio/bestaudio"
+# Video-only H.264 at <=480p is enough for scene detection and captioning, and OpenCV
+# can decode it without extra codecs.
+FRAMES_FORMAT = (
+    "bestvideo[height<=480][vcodec^=avc1]/bestvideo[height<=480]/worst[height>=240]/worst"
+)
+
+
+class VideoDownloadError(RuntimeError):
+    pass
+
+
+@dataclass
+class VideoMetadata:
+    youtube_video_id: str
+    title: str
+    channel: str
+    duration_seconds: float
+    thumbnail_url: str
+    is_live: bool
 
 
 class VideoController(BaseController):
-    def __init__(self):
-        super().__init__()
-    
-    
-    def get_video_info(self, youtube_url: str):
-        ydl_opts = {
-            'quiet': True,
-            'skip_download': True,
-            'noplaylist': True,      
-            'forcejson': True,      
+    _BASE_OPTS = {"quiet": True, "no_warnings": True, "noprogress": True, "noplaylist": True}
+
+    def fetch_metadata(self, youtube_video_id: str) -> VideoMetadata:
+        with yt_dlp.YoutubeDL({**self._BASE_OPTS, "skip_download": True}) as ydl:
+            info = ydl.extract_info(watch_url(youtube_video_id), download=False)
+        return VideoMetadata(
+            youtube_video_id=info.get("id") or youtube_video_id,
+            title=info.get("title") or "",
+            channel=info.get("channel") or info.get("uploader") or "",
+            duration_seconds=float(info.get("duration") or 0),
+            thumbnail_url=info.get("thumbnail") or "",
+            is_live=bool(info.get("is_live")),
+        )
+
+    def validate_metadata(self, metadata: VideoMetadata) -> tuple[bool, str]:
+        if metadata.is_live:
+            return False, ResponseSignal.VIDEO_IS_LIVE.value
+        max_seconds = self.app_settings.MAX_VIDEO_DURATION_MINUTES * 60
+        if metadata.duration_seconds > max_seconds:
+            return False, ResponseSignal.VIDEO_DURATION_EXCEEDED.value
+        return True, ResponseSignal.VIDEO_ADDED.value
+
+    def _download(self, youtube_video_id: str, directory, fmt: str) -> str:
+        opts = {
+            **self._BASE_OPTS,
+            "format": fmt,
+            "outtmpl": str(directory / f"{youtube_video_id}.%(ext)s"),
+            "overwrites": True,
         }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(youtube_url, download=False)
-        return info
-
-    def validate_uploaded_video(self, youtube_url: str):
-        info = self.get_video_info(youtube_url)
-        filesize_mb = (info.get('filesize') or info.get('filesize_approx') or 0) / (1024 * 1024)
-        
-        if filesize_mb > self.app_settings.MAX_VIDEO_SIZE_MB:
-            return False, ResponseSignal.VIDEO_SIZE_EXCEEDED.value
-
-        return True, ResponseSignal.VIDEO_VALIDATED_SUCCESS.value
-    
-    def generate_audio_path(self, user_id: str):
-        user_dir = Path(self.audios_dir) / user_id
-        user_dir.mkdir(parents=True, exist_ok=True)
-
-        # Use video_id if available, otherwise random UUID
-        unique_name = f"{uuid.uuid4().hex}.mp3"
-        return str(user_dir / unique_name)
-    
-    def download_youtube_audio(self, youtube_url: str, audio_path: str):
-
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': audio_path.replace(".mp3", ""), 
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            'quiet': True,
-            'noplaylist': True,
-        }
-
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([youtube_url])
-            return True, ResponseSignal.VIDEO_UPLOAD_SUCCESS.value
-        except Exception as e:
-            print(f"Download failed: {e}")
-            return False, ResponseSignal.VIDEO_UPLOAD_FAILED.value 
-        
-       
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info = ydl.extract_info(watch_url(youtube_video_id), download=True)
+                downloads = info.get("requested_downloads") or []
+                path = downloads[0].get("filepath") if downloads else None
+                return path or ydl.prepare_filename(info)
+        except Exception as exc:
+            raise VideoDownloadError(f"Download of {youtube_video_id} failed: {exc}") from exc
+
+    def download_audio(self, youtube_video_id: str, user_id: str) -> str:
+        return self._download(youtube_video_id, self.user_dir(self.audios_dir, user_id),
+                              AUDIO_FORMAT)
+
+    def download_video(self, youtube_video_id: str, user_id: str) -> str:
+        return self._download(youtube_video_id, self.user_dir(self.videos_dir, user_id),
+                              FRAMES_FORMAT)

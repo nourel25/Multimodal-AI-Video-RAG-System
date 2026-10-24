@@ -1,33 +1,23 @@
-import os
-from helpers.config import get_settings, Settings
+from pathlib import Path
+
+from helpers.config import Settings, get_settings
+
 
 class BaseController:
-    def __init__(self):
-        
-        self.app_settings = get_settings()
+    def __init__(self, settings: Settings | None = None):
+        self.app_settings = settings or get_settings()
 
-        # Get project root directory (two levels up)
-        self.base_dir = os.path.dirname(os.path.dirname(__file__))
+        assets = self.app_settings.assets_path
+        self.audios_dir = assets / "audios"
+        self.videos_dir = assets / "videos"
+        self.transcripts_dir = assets / "transcripts"
+        self.database_dir = assets / "database"
+        for directory in (self.audios_dir, self.videos_dir, self.transcripts_dir,
+                          self.database_dir):
+            directory.mkdir(parents=True, exist_ok=True)
 
-        # Define audios directory
-        self.audios_dir = os.path.join(self.base_dir, "assets", "audios")
-        os.makedirs(self.audios_dir, exist_ok=True)
-        
-        # Define transcript directory
-        self.transcripts_dir = os.path.join(self.base_dir, "assets", "transcripts")
-        os.makedirs(self.audios_dir, exist_ok=True)
-        
-        # Define database directory
-        self.database_dir = os.path.join(self.base_dir, "assets", "database")
-        os.makedirs(self.audios_dir, exist_ok=True)
-        
-    def get_database_path(self, db_name: str):
-
-        database_path = os.path.join(
-            self.database_dir, db_name
-        )
-
-        if not os.path.exists(database_path):
-            os.makedirs(database_path)
-
-        return database_path
+    @staticmethod
+    def user_dir(base: Path, user_id: str) -> Path:
+        path = base / user_id
+        path.mkdir(parents=True, exist_ok=True)
+        return path

@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets
+.env
+
+# Runtime data
+src/assets/audios/
+src/assets/videos/
+src/assets/frames/
+src/assets/transcripts/
+src/assets/database/
+eval/results/*.json
+
+# IDE
+.idea/
+.vscode/

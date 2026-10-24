@@ -1,50 +1,58 @@
 from abc import ABC, abstractmethod
-from typing import List
+from dataclasses import dataclass, field
+
+from stores.embedding.EmbeddingInterface import SparseVector
+
+from .VectorDBEnums import SearchMode
+
+
+@dataclass
+class VectorRecord:
+    id: str | int
+    dense: list[float]
+    sparse: SparseVector | None = None
+    payload: dict = field(default_factory=dict)
+
+
+@dataclass
+class ScoredRecord:
+    id: str | int
+    score: float
+    payload: dict
+
 
 class VectorDBInterface(ABC):
-    
     @abstractmethod
-    def connect(self):
-        pass
-    
-    @abstractmethod
-    def disconnect(self):
-        pass
-    
-    @abstractmethod
-    def is_collection_existed(self, collection_name: str) -> bool:
-        pass
-    
-    @abstractmethod
-    def list_all_collections(self) -> List:
-        pass
-    
-    @abstractmethod
-    def get_collection_info(self, collection_name: str) -> dict:
-        pass
-    
-    @abstractmethod
-    def delete_collection(self, collection_name: str):
-        pass
-    
-    @abstractmethod
-    def create_collection(self, collection_name: str,
-                                embedding_size: int,
-                                do_reset: bool = False):
-        pass
-    
-    @abstractmethod
-    def insert_one(self, collection_name: str, text: str, vector: list,
-                         metadata: dict = None,
-                         record_id: str = None):
-        pass
-    
-    @abstractmethod
-    def insert_many(self, collection_name: str, texts: list, 
-                          vectors: list, metadata: list = None, 
-                          record_ids: list = None, batch_size: int = 50):
-        pass
+    async def connect(self): ...
 
     @abstractmethod
-    def search_by_vector(self, collection_name: str, vector: list, limit: int):
-        pass
+    async def disconnect(self): ...
+
+    @abstractmethod
+    async def is_collection_existed(self, collection_name: str) -> bool: ...
+
+    @abstractmethod
+    async def list_all_collections(self) -> list[str]: ...
+
+    @abstractmethod
+    async def delete_collection(self, collection_name: str) -> bool: ...
+
+    @abstractmethod
+    async def create_collection(self, collection_name: str, embedding_size: int,
+                                do_reset: bool = False) -> bool: ...
+
+    @abstractmethod
+    async def upsert_records(self, collection_name: str, records: list[VectorRecord],
+                             batch_size: int = 64) -> int: ...
+
+    @abstractmethod
+    async def delete_by_video(self, collection_name: str, video_id: str) -> None: ...
+
+    @abstractmethod
+    async def count(self, collection_name: str) -> int: ...
+
+    @abstractmethod
+    async def search(self, collection_name: str, *, dense_vector: list[float] | None,
+                     sparse_vector: SparseVector | None, limit: int,
+                     mode: SearchMode = SearchMode.HYBRID,
+                     video_ids: list[str] | None = None) -> list[ScoredRecord]: ...

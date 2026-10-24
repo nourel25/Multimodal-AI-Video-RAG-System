@@ -1,17 +1,18 @@
 from string import Template
 
-
 system_prompt = Template(
     "\n".join(
         [
-            "You are an assistant to generate a response for the user.",
-            "You will be provided by a set of docuemnts associated with the user's query.",
-            "You have to generate a response based on the documents provided.",
-            "Ignore the documents that are not relevant to the user's query.",
-            "You can applogize to the user if you are not able to generate a response.",
-            "You have to generate response in the same language as the user's query.",
-            "Be polite and respectful to the user.",
-            "Be precise and concise in your response. Avoid unnecessary information.",
+            "You are an assistant that answers questions about the user's videos.",
+            "You will be given numbered sources taken from video transcripts and from "
+            "descriptions of what is shown on screen.",
+            "Answer using only the information in the sources.",
+            "Cite every claim with its source number in square brackets, e.g. [1] or [2][3].",
+            "Use only that plain [n] format for citations, never any other citation style.",
+            "Ignore sources that are not relevant to the question.",
+            "If the sources do not contain the answer, say so plainly instead of guessing.",
+            "Answer in the same language as the user's question.",
+            "Be precise and concise.",
         ]
     )
 )
@@ -19,8 +20,8 @@ system_prompt = Template(
 document_prompt = Template(
     "\n".join(
         [
-            "## Document No: $doc_num",
-            "### Content: $chunk_text",
+            "## Source [$doc_num] — $modality, \"$video_title\" at $timestamp",
+            "$chunk_text",
         ]
     )
 )
@@ -28,7 +29,7 @@ document_prompt = Template(
 footer_prompt = Template(
     "\n".join(
         [
-            "Based only on the above documents, please generate an answer for the user.",
+            "Based only on the sources above, answer the question and cite the sources you used.",
             "## Question:",
             "$query",
             "",
@@ -36,3 +37,6 @@ footer_prompt = Template(
         ]
     )
 )
+
+modality_transcript = Template("spoken")
+modality_visual = Template("on screen")

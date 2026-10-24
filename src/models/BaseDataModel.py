@@ -1,6 +1,13 @@
-from helpers.config import get_settings
+from models.db_schemas.base import utc_now
+
 
 class BaseDataModel:
-    def __init__(self, db_client: object):
+    collection_name: str
+
+    def __init__(self, db_client):
         self.db_client = db_client
-        self.app_settings = get_settings
+        self.collection = db_client[self.collection_name]
+
+    @staticmethod
+    def now():
+        return utc_now()
