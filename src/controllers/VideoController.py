@@ -35,7 +35,7 @@ class VideoMetadata:
 
 
 class VideoController(BaseController):
-    _BASE_OPTS = {"quiet": True, "no_warnings": True, "noplaylist": True}
+    _BASE_OPTS = {"quiet": True, "no_warnings": True, "noprogress": True, "noplaylist": True}
 
     def fetch_metadata(self, youtube_video_id: str) -> VideoMetadata:
         with yt_dlp.YoutubeDL({**self._BASE_OPTS, "skip_download": True}) as ydl:
