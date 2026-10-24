@@ -1,31 +1,22 @@
+import json
+
+from stores.transcription import TranscriptionInterface, TranscriptionResult
+
 from .BaseController import BaseController
-from faster_whisper import WhisperModel
-from pathlib import Path
-import uuid
-from models.enums.ResponseEnum import ResponseSignal
 
 
 class AudioController(BaseController):
-    def __init__(self):
-        super().__init__()
-        self.model = WhisperModel('small', device='cpu')
-            
-    def generate_transcript_path(self, user_id: str):
-        user_dir = Path(self.transcripts_dir) / user_id
-        user_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, transcriber: TranscriptionInterface, settings=None):
+        super().__init__(settings)
+        self.transcriber = transcriber
 
-        unique_name = f"{uuid.uuid4().hex}.txt"
-        return  str(user_dir / unique_name) 
-    
-    def transcribe_audio(self, audio_path: str, transcript_path: str):
-        try:
-            segments, _ = self.model.transcribe(audio_path, language='en')
-            transcript = " ".join([segment.text for segment in segments])
-            
-            with open(transcript_path, "w", encoding="utf-8") as f:
-                f.write(transcript)
-            
-            return True, ResponseSignal.AUDIO_TRANSCRIPT_SUCCESS.value
-        except Exception as e:
-            print(f"Transcription failed: {e}")
-            return False, ResponseSignal.AUDIO_TRANSCRIPT_FAILED.value   
+    def transcribe(self, audio_path: str, language: str | None = None) -> TranscriptionResult:
+        return self.transcriber.transcribe(audio_path, language=language)
+
+    def save_transcript(self, result: TranscriptionResult, user_id: str,
+                        youtube_video_id: str) -> str:
+        """Persist timestamped segments so a video can be re-chunked without re-transcribing."""
+        path = self.user_dir(self.transcripts_dir, user_id) / f"{youtube_video_id}.json"
+        path.write_text(json.dumps(result.to_dict(), ensure_ascii=False, indent=2),
+                        encoding="utf-8")
+        return str(path)

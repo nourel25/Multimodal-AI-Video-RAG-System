@@ -1,142 +1,193 @@
-from .BaseController import BaseController
-from models.db_schemas import User, Chunk
-from sentence_transformers import SentenceTransformer 
-from typing import List
-import ollama
+import asyncio
+import logging
+import uuid
+from collections.abc import AsyncIterator
+from dataclasses import dataclass
 
-class NLPController(BaseController):
-    def __init__(self, vectordb_client, template_parser, generation_client):
-        super().__init__()
-        
+from starlette.concurrency import iterate_in_threadpool
+
+from helpers.config import Settings
+from helpers.text import detect_language
+from helpers.youtube import format_timestamp
+from models.db_schemas import Chunk, RetrievedDocument, User, Video
+from models.enums import Modality
+from stores.embedding.EmbeddingInterface import EmbeddingInterface, RerankerInterface
+from stores.embedding.SparseEncoder import BM25SparseEncoder
+from stores.llm import ChatMessage, ChatRole, LLMInterface
+from stores.templates.template_parser import TemplateParser
+from stores.vectordb.VectorDBEnums import SearchMode
+from stores.vectordb.VectorDBInterface import VectorDBInterface, VectorRecord
+
+logger = logging.getLogger(__name__)
+
+MAX_HISTORY_MESSAGES = 10
+
+
+@dataclass
+class AnswerResult:
+    answer: str
+    sources: list[RetrievedDocument]
+    language: str
+
+
+def point_id(chunk_id: str) -> str:
+    """Deterministic Qdrant point id, so re-indexing a chunk overwrites instead of duplicating."""
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"chunk:{chunk_id}"))
+
+
+class NLPController:
+    def __init__(self, *, vectordb_client: VectorDBInterface, embedder: EmbeddingInterface,
+                 sparse_encoder: BM25SparseEncoder, template_parser: TemplateParser,
+                 settings: Settings, generation_client: LLMInterface | None = None,
+                 reranker: RerankerInterface | None = None):
         self.vectordb_client = vectordb_client
-        self.embed_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-        self.embedding_size = 384
+        self.embedder = embedder
+        self.sparse_encoder = sparse_encoder
         self.template_parser = template_parser
-        self.generate_model = "llama3.2:1b-instruct-q8_0"
         self.generation_client = generation_client
-        
-                
-    def create_collection_name(self, user_id: str):
-        return f"collection_{user_id}".strip()
-    
-    def reset_vector_db_collection(self, user: User):
-        collection_name = self.create_collection_name(
-            user_id=user.user_id,
-        )
-        return self.vectordb_client.delete_collection(
-            collection_name=collection_name
-        )
+        self.reranker = reranker
+        self.settings = settings
 
-    def index_info_vector_db(self, user: User, chunks: List[Chunk],
-                              chunks_ids: List[int], do_reset: bool = False):
-        
-        # step1: get collection name
-        collection_name = self.create_collection_name(user_id=user.user_id)
-        
-        # step2: manage items
-        texts = [c.chunk_text for c in chunks]
-        metadata = [c.chunk_metadata for c in chunks]
-        vectors = [
-            self.embed_model.encode(text)
-            for text in texts
-        ]
-        
-        # step3: create collection if not exists
-        _ = self.vectordb_client.create_collection(
-            collection_name=collection_name,
-            embedding_size=self.embedding_size,
-            do_reset=do_reset,
-        )
-        
-        # step4: insert intp vector db
-        _ = self.vectordb_client.insert_many(
-            collection_name=collection_name,
-            texts=texts,
-            metadata=metadata,
-            vectors=vectors,
-            record_ids=chunks_ids,
-        )
+    @staticmethod
+    def create_collection_name(user_id: str) -> str:
+        return f"collection_{user_id}"
 
+    # ---------- indexing ----------
 
-        return True
-    
-    def search_vector_db_collection(self, user: User, text: str, limit: int = 3):
-        
-        # step1: get collection name
-        collection_name = self.create_collection_name(user_id=user.user_id)
-        
-        # step2: get text embedding vector
-        vector = self.embed_model.encode(text)
-        
-        if vector is None or vector.shape[0] == 0:
-            return False
-        
-        # step3: do sematic search
-        results = self.vectordb_client.search_by_vector(
-            collection_name=collection_name,
-            vector=vector.tolist(),
-            limit=limit,
-        )
-        
-        print(results)
-        
-        if not results:
-            return False
-        
-        return results
-    
-    def generate_answer(self, messages: list[dict]):
-        # Initialize the client once
-        response = self.generation_client.chat(
-            model=self.generate_model,
-            messages=messages
-        )
-        
-        return response['message']['content']        
-    
-    def answer_rag_question(self, language:str, user: User, query: str, limit: int = 5):
-        
-        answer, full_prompt, chat_history = None, None, None
-        
-        self.template_parser.set_language(language=language)
-        
-        # step1: Retrieve related documents
-        retrieved_documents = self.search_vector_db_collection(
-            user=user,
-            text=query,
-            limit=limit
-        )
-        
-        if not retrieved_documents or len(retrieved_documents) == 0:
-            return answer, full_prompt, chat_history
-        
-        # step2: Construct LLM prompt
-        system_prompt = self.template_parser.get("rag", "system_prompt")
-        
-        documents_prompts = "\n".join(
-            self.template_parser.get(
-                group="rag",
-                key="document_prompt",
-                vars={
-                    "doc_num": idx +1,
-                    "chunk_text": doc.text,
-                }
+    async def reset_collection(self, user: User) -> None:
+        await self.vectordb_client.delete_collection(self.create_collection_name(user.user_id))
+
+    async def index_chunks(self, user: User, video: Video, chunks: list[Chunk]) -> int:
+        if not chunks:
+            return 0
+        collection_name = self.create_collection_name(user.user_id)
+        texts = [chunk.chunk_text for chunk in chunks]
+
+        dense = await asyncio.to_thread(self.embedder.embed_documents, texts)
+        sparse = [self.sparse_encoder.encode_document(text) for text in texts]
+
+        await self.vectordb_client.create_collection(collection_name, self.embedder.size)
+        records = [
+            VectorRecord(
+                id=point_id(str(chunk.id)),
+                dense=dense[i],
+                sparse=sparse[i],
+                payload={
+                    "chunk_id": str(chunk.id),
+                    "video_id": str(video.id),
+                    "youtube_video_id": video.youtube_video_id,
+                    "video_title": video.title,
+                    "text": chunk.chunk_text,
+                    "start": chunk.start,
+                    "end": chunk.end,
+                    "modality": chunk.modality.value if isinstance(chunk.modality, Modality)
+                    else chunk.modality,
+                    "order": chunk.chunk_order,
+                },
             )
-            for idx, doc in enumerate(retrieved_documents)
-        )
-        
-        footer_prompt = self.template_parser.get(
-            group="rag",
-            key="footer_prompt", 
-            vars={"query": query}
-        )
-        
-        full_prompt = "\n\n".join([ documents_prompts,  footer_prompt ])
-        messages = [
-            {"role": "sytem", "content": system_prompt},
-            {"role": "user", "content": full_prompt}
+            for i, chunk in enumerate(chunks)
         ]
-        
-        answer = self.generate_answer(messages=messages)
-        
-        return answer, full_prompt, messages
+        return await self.vectordb_client.upsert_records(collection_name, records)
+
+    async def delete_video_vectors(self, user: User, video_id: str) -> None:
+        await self.vectordb_client.delete_by_video(
+            self.create_collection_name(user.user_id), video_id)
+
+    # ---------- retrieval ----------
+
+    async def search(self, user: User, query: str, limit: int = 5,
+                     mode: SearchMode | None = None, rerank: bool | None = None,
+                     video_ids: list[str] | None = None) -> list[RetrievedDocument]:
+        mode = SearchMode(mode or self.settings.RETRIEVAL_MODE)
+        rerank = self.settings.RERANK_ENABLED if rerank is None else rerank
+        rerank = rerank and self.reranker is not None
+        candidates = max(limit, self.settings.RETRIEVAL_CANDIDATES) if rerank else limit
+
+        dense_vector = None
+        if mode != SearchMode.SPARSE:
+            dense_vector = await asyncio.to_thread(self.embedder.embed_query, query)
+        sparse_vector = self.sparse_encoder.encode_query(query)
+
+        records = await self.vectordb_client.search(
+            self.create_collection_name(user.user_id),
+            dense_vector=dense_vector, sparse_vector=sparse_vector,
+            limit=candidates, mode=mode, video_ids=video_ids,
+        )
+        documents = [
+            RetrievedDocument(
+                chunk_id=r.payload.get("chunk_id", r.id),
+                video_id=r.payload.get("video_id", ""),
+                youtube_video_id=r.payload.get("youtube_video_id", ""),
+                video_title=r.payload.get("video_title", ""),
+                text=r.payload.get("text", ""),
+                start=r.payload.get("start", 0),
+                end=r.payload.get("end", 0),
+                modality=r.payload.get("modality", Modality.TRANSCRIPT.value),
+                score=r.score,
+            )
+            for r in records
+        ]
+
+        if rerank and documents:
+            scores = await asyncio.to_thread(self.reranker.score, query,
+                                             [doc.text for doc in documents])
+            for doc, score in zip(documents, scores, strict=True):
+                doc.score = score
+            documents.sort(key=lambda doc: doc.score, reverse=True)
+
+        return documents[:limit]
+
+    # ---------- generation ----------
+
+    def build_messages(self, query: str, documents: list[RetrievedDocument], language: str,
+                       history: list[ChatMessage] | None = None) -> list[ChatMessage]:
+        tp = self.template_parser
+        sources = "\n\n".join(
+            tp.get("rag", "document_prompt", {
+                "doc_num": i + 1,
+                "modality": tp.get("rag", f"modality_{doc.modality.value}", language=language),
+                "video_title": doc.video_title or doc.youtube_video_id,
+                "timestamp": format_timestamp(doc.start),
+                "chunk_text": doc.text,
+            }, language=language)
+            for i, doc in enumerate(documents)
+        )
+        footer = tp.get("rag", "footer_prompt", {"query": query}, language=language)
+
+        messages: list[ChatMessage] = [
+            {"role": ChatRole.SYSTEM.value,
+             "content": tp.get("rag", "system_prompt", language=language)},
+        ]
+        for turn in (history or [])[-MAX_HISTORY_MESSAGES:]:
+            if turn["role"] in (ChatRole.USER.value, ChatRole.ASSISTANT.value):
+                messages.append({"role": turn["role"], "content": turn["content"]})
+        messages.append({"role": ChatRole.USER.value, "content": f"{sources}\n\n{footer}"})
+        return messages
+
+    def _language(self, query: str, language: str | None) -> str:
+        return self.template_parser.resolve_language(language or detect_language(query))
+
+    async def answer(self, user: User, query: str, *, limit: int = 5,
+                     language: str | None = None, history: list[ChatMessage] | None = None,
+                     **search_kwargs) -> AnswerResult | None:
+        documents = await self.search(user, query, limit=limit, **search_kwargs)
+        if not documents:
+            return None
+        language = self._language(query, language)
+        messages = self.build_messages(query, documents, language, history)
+        answer = await asyncio.to_thread(self.generation_client.generate, messages)
+        return AnswerResult(answer=answer.strip(), sources=documents, language=language)
+
+    async def stream_answer(self, user: User, query: str, *, limit: int = 5,
+                            language: str | None = None,
+                            history: list[ChatMessage] | None = None,
+                            **search_kwargs) -> AsyncIterator[tuple[str, object]]:
+        """Yield ("sources", [...]) first, then ("token", str) events as the LLM generates."""
+        documents = await self.search(user, query, limit=limit, **search_kwargs)
+        yield "sources", documents
+        if not documents:
+            return
+        language = self._language(query, language)
+        messages = self.build_messages(query, documents, language, history)
+        async for token in iterate_in_threadpool(self.generation_client.stream(messages)):
+            yield "token", token
