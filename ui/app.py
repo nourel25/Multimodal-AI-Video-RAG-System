@@ -4,6 +4,7 @@
 """
 
 import os
+import re
 
 import streamlit as st
 
@@ -48,7 +49,7 @@ def show_error(exc: Exception) -> None:
         st.error(str(exc))
 
 
-def render_sources(sources: list[dict], key_prefix: str) -> None:
+def _render_source_list(sources: list[dict], key_prefix: str) -> None:
     for source in sources:
         icon = "🖼️" if source["modality"] == "visual" else "🗣️"
         label = f"[{source['index']}] {icon} {source['video_title']} @ {source['timestamp']}"
@@ -60,6 +61,20 @@ def render_sources(sources: list[dict], key_prefix: str) -> None:
                 st.rerun()
             cols[1].link_button("YouTube", source["url"])
             cols[2].caption(f"score {source['score']:.3f}")
+
+
+def render_sources(sources: list[dict], key_prefix: str, answer: str | None = None) -> None:
+    """Show the sources the answer cites; keep the rest out of the way."""
+    if answer is None:
+        _render_source_list(sources, key_prefix)
+        return
+    cited = {int(n) for n in re.findall(r"\[(\d+)\]", answer)}
+    used = [s for s in sources if s["index"] in cited]
+    unused = [s for s in sources if s["index"] not in cited]
+    _render_source_list(used, key_prefix)
+    if unused:
+        with st.popover(f"{len(unused)} retrieved but not cited"):
+            _render_source_list(unused, f"{key_prefix}-unused")
 
 
 library_tab, chat_tab, search_tab = st.tabs(["📚 Library", "💬 Ask", "🔎 Retrieval playground"])
@@ -141,7 +156,7 @@ with chat_tab:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
                     if message.get("sources"):
-                        render_sources(message["sources"], f"h{i}")
+                        render_sources(message["sources"], f"h{i}", message["content"])
 
         if question := st.chat_input("Ask about your videos…"):
             history = [{"role": m["role"], "content": m["content"]}
@@ -175,7 +190,7 @@ with chat_tab:
                 if errors:
                     st.warning("No matching content found." if "no_relevant_context" in errors
                                else f"Generation failed: {errors[0]}")
-                render_sources(sources, answer_key)
+                render_sources(sources, answer_key, answer or "")
             st.session_state.messages.append(
                 {"role": "assistant", "content": answer or "", "sources": sources})
 

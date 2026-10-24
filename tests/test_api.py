@@ -240,3 +240,21 @@ def test_transcription_falls_back_when_primary_fails(tmp_path):
     assert transcriber.transcribe("audio.webm").language == "en"
     assert transcriber.transcribe("audio.webm").language == "en"
     assert built == [1]  # fallback created once, lazily
+
+
+async def test_off_topic_question_gets_no_sources_and_no_llm_call(client, add_and_process,
+                                                                 container):
+    await add_and_process()
+    calls_before = len(container.generation_client.calls)
+    response = await client.post("/api/v1/users/alice/answer", json={
+        "query": "How do I bake a chocolate cake?", "rerank": True})
+    assert response.status_code == 404
+    assert response.json()["signal"] == "no_relevant_context"
+    assert len(container.generation_client.calls) == calls_before
+
+    search = await client.post("/api/v1/users/alice/search",
+                               json={"query": "chocolate cake recipe", "rerank": True})
+    assert search.json()["results"] == []
+    relevant = await client.post("/api/v1/users/alice/search",
+                                 json={"query": "Starlette web parts", "rerank": True})
+    assert relevant.json()["results"]

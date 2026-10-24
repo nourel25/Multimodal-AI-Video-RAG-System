@@ -141,6 +141,10 @@ class NLPController:
             for doc, score in zip(documents, scores, strict=True):
                 doc.score = score
             documents.sort(key=lambda doc: doc.score, reverse=True)
+            # Cross-encoder scores are calibrated (0-1), so a fixed cut-off can tell "nothing
+            # in these videos is about this" apart from weak-but-relevant matches.
+            min_score = self.settings.RERANK_MIN_SCORE
+            documents = [doc for doc in documents if doc.score >= min_score]
 
         return documents[:limit]
 

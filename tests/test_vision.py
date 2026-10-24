@@ -70,3 +70,19 @@ def test_captioning_stops_after_repeated_failures(settings):
     frames = [Keyframe(start=i, end=i + 1, timestamp=i, image=b"x") for i in range(10)]
     assert vision.caption_keyframes(frames, "Talk") == []
     assert llm.attempts == 3  # not 10: the circuit breaker saved 7 quota-burning calls
+
+
+class DailyQuotaLLM(QuotaExhaustedLLM):
+    def describe_image(self, image, prompt, mime_type="image/jpeg"):
+        from stores.llm import LLMError
+
+        self.attempts += 1
+        raise LLMError("quota exhausted", provider="fake", quota_exhausted=True)
+
+
+def test_captioning_stops_at_the_first_exhausted_quota(settings):
+    llm = DailyQuotaLLM()
+    vision = VisionController(llm, TemplateParser(default_language="en"), settings)
+    frames = [Keyframe(start=i, end=i + 1, timestamp=i, image=b"x") for i in range(10)]
+    assert vision.caption_keyframes(frames, "Talk") == []
+    assert llm.attempts == 1

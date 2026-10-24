@@ -11,10 +11,14 @@ class ChatMessage(TypedDict):
 class LLMError(RuntimeError):
     """Raised by providers after retries are exhausted or for non-retryable failures."""
 
-    def __init__(self, message: str, *, provider: str, transient: bool = False):
+    def __init__(self, message: str, *, provider: str, transient: bool = False,
+                 quota_exhausted: bool = False):
         super().__init__(f"[{provider}] {message}")
         self.provider = provider
         self.transient = transient
+        # The provider asked to wait longer than we ever retry (e.g. a daily quota is used
+        # up): further calls today will fail too, so callers should stop, not keep trying.
+        self.quota_exhausted = quota_exhausted
 
 
 class ProviderConfigError(ValueError):
