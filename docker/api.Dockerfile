@@ -8,9 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# CPU-only torch keeps the image ~2 GB smaller than the default CUDA build.
+# CPU-only torch by default (~2 GB smaller); docker-compose.gpu.yml switches to the CUDA build.
+ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
 COPY src/requirements /app/requirements
-RUN pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu \
+RUN pip install torch==2.14.1 --index-url ${TORCH_INDEX_URL} \
  && pip install -r requirements/base.txt -r requirements/ml.txt
 
 COPY src /app

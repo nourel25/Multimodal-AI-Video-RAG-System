@@ -75,7 +75,7 @@ class Settings(BaseSettings):
 
     # ========================= Embeddings & retrieval =========================
     EMBEDDING_MODEL: str = "BAAI/bge-m3"
-    EMBEDDING_DEVICE: str = "cpu"
+    EMBEDDING_DEVICE: str = "auto"  # auto (GPU if available) | cuda | cpu
     EMBEDDING_BATCH_SIZE: int = 16
     EMBEDDING_QUERY_PREFIX: str = ""
     EMBEDDING_DOCUMENT_PREFIX: str = ""
