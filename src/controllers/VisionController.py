@@ -135,6 +135,9 @@ class VisionController(BaseController):
                 logger.warning("Vision backend cannot caption images: %s", exc)
                 break
             except LLMError as exc:
+                if exc.quota_exhausted:
+                    logger.warning("Vision quota exhausted, skipping remaining frames: %s", exc)
+                    break
                 consecutive_failures += 1
                 logger.warning("Captioning frame at %.1fs failed: %s", keyframe.timestamp, exc)
                 # Circuit breaker: repeated failures usually mean the quota is exhausted, and

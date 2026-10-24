@@ -132,3 +132,19 @@ def test_groq_language_names_become_iso_codes():
     assert language_code("Arabic") == "ar"
     assert language_code("ar") == "ar"
     assert language_code(None) is None
+
+
+def test_daily_quota_fails_fast_instead_of_retrying(monkeypatch):
+    waits = []
+    monkeypatch.setattr("tenacity.nap.time.sleep", waits.append)
+    attempts = []
+
+    def exhausted():
+        attempts.append(1)
+        raise _RateLimited('429 per-day limit "retryDelay": "58676s"')
+
+    with pytest.raises(LLMError) as info:
+        call_with_retry(exhausted, provider="gemini", is_transient=lambda e: True, max_attempts=3)
+    assert attempts == [1] and waits == []
+    assert info.value.quota_exhausted
+    assert "16h17m" in str(info.value)

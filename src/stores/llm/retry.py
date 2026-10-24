@@ -54,6 +54,11 @@ class wait_retry_after:
         return self.fallback(retry_state)
 
 
+def _format_wait(seconds: float) -> str:
+    hours, rest = divmod(int(seconds), 3600)
+    return f"{hours}h{rest // 60:02d}m" if hours else f"{rest // 60}m{rest % 60:02d}s"
+
+
 def call_with_retry(
     fn: Callable[[], T],
     *,
@@ -69,10 +74,15 @@ def call_with_retry(
             limiter.acquire()
         return fn()
 
+    def worth_retrying(exc: BaseException) -> bool:
+        requested = retry_after_seconds(exc)
+        # A rate-limit asking for hours (daily quota) won't clear within our retries.
+        return is_transient(exc) and (requested is None or requested <= MAX_RETRY_AFTER_SECONDS)
+
     retrying = Retrying(
         stop=stop_after_attempt(max_attempts),
         wait=wait_retry_after(),
-        retry=retry_if_exception(is_transient),
+        retry=retry_if_exception(worth_retrying),
         reraise=False,
         before_sleep=lambda state: logger.warning(
             "%s call failed (attempt %s), retrying in %.1fs: %s",
@@ -87,4 +97,8 @@ def call_with_retry(
     except LLMError:
         raise
     except Exception as exc:
+        requested = retry_after_seconds(exc)
+        if is_transient(exc) and requested is not None and requested > MAX_RETRY_AFTER_SECONDS:
+            raise LLMError(f"quota exhausted, provider asks to retry in {_format_wait(requested)}",
+                           provider=provider, transient=False, quota_exhausted=True) from exc
         raise LLMError(str(exc), provider=provider, transient=is_transient(exc)) from exc
