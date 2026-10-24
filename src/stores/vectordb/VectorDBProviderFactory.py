@@ -1,19 +1,23 @@
+from helpers.config import Settings
+
 from .providers import QdrantDBProvider
 from .VectorDBEnums import VectorDBEnums
-from controllers.BaseController import BaseController
+from .VectorDBInterface import VectorDBInterface
+
 
 class VectorDBProviderFactory:
-    def __init__(self, config):
-        self.config = config
-        self.base_controller = BaseController()
+    def __init__(self, settings: Settings):
+        self.settings = settings
 
-    def create(self, provider: str):
-        if provider == VectorDBEnums.QDRANT.value:
-            db_path = self.base_controller.get_database_path(db_name=self.config.VECTOR_DB_PATH)
+    def create(self, provider: str) -> VectorDBInterface:
+        s = self.settings
+        if provider.upper() == VectorDBEnums.QDRANT.value:
+            if s.QDRANT_URL:
+                return QdrantDBProvider(url=s.QDRANT_URL, api_key=s.QDRANT_API_KEY,
+                                        distance_method=s.VECTOR_DB_DISTANCE_METHOD)
+            db_path = s.assets_path / "database" / s.VECTOR_DB_PATH
+            db_path.mkdir(parents=True, exist_ok=True)
+            return QdrantDBProvider(path=str(db_path),
+                                    distance_method=s.VECTOR_DB_DISTANCE_METHOD)
 
-            return QdrantDBProvider(
-                db_path=db_path,
-                distance_method=self.config.VECTOR_DB_DISTANCE_METHOD,
-            )
-        
-        return None
+        raise ValueError(f"Unsupported vector DB backend: {provider!r}")
