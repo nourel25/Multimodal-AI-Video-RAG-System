@@ -127,7 +127,7 @@ python eval/run_retrieval_eval.py --chunk-chars 300 --tag gpu_c300   # writes ev
 
 ```bash
 cp src/.env.example src/.env          # pick backends, add GROQ_API_KEY / GEMINI_API_KEY if used
-cp docker/.env.example docker/.env    # set a MongoDB password
+cp docker/.env.example docker/.env    # set a MongoDB password (letters and digits only: it goes into a URL)
 cd docker
 docker compose up -d --build
 ```
@@ -242,5 +242,7 @@ docker/                   Dockerfiles and compose stack
 - **Why time-window labels in the eval set?** They survive any change to chunk size, overlap or
   transcription model, so retrieval configurations can be compared fairly.
 - **Why a job queue?** Transcription takes minutes; HTTP requests should not. The in-process
-  queue keeps local development dependency-free, ARQ makes it survive restarts and scale out.
+  queue keeps local development dependency-free; with ARQ, queued jobs survive API restarts in
+  Redis. Either way a job interrupted mid-run (shutdown, crash, timeout) is marked failed on the
+  next start instead of leaving videos stuck in "processing", and can simply be re-run.
 

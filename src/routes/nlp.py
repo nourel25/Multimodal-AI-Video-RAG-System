@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 
@@ -7,7 +8,7 @@ from sse_starlette.sse import EventSourceResponse
 from core.container import ServiceContainer
 from models.ChunkModel import ChunkModel
 from models.db_schemas import User
-from models.enums import ResponseSignal
+from models.enums import ResponseSignal, VideoStatus
 from models.VideoModel import VideoModel
 from stores.llm import LLMError
 
@@ -35,7 +36,8 @@ def _search_kwargs(body: SearchRequest) -> dict:
 @nlp_router.post("/search", response_model=SearchResponse)
 async def search(body: SearchRequest, user: User = Depends(get_user_or_404),
                  container: ServiceContainer = Depends(get_container)):
-    documents = await container.nlp_controller().search(
+    nlp = await asyncio.to_thread(container.nlp_controller)
+    documents = await nlp.search(
         user, body.query, limit=body.limit, **_search_kwargs(body))
     return SearchResponse(signal=ResponseSignal.VECTORDB_SEARCH_SUCCESS.value,
                           results=to_sources(documents))
@@ -44,7 +46,8 @@ async def search(body: SearchRequest, user: User = Depends(get_user_or_404),
 @nlp_router.post("/answer", response_model=AnswerResponse)
 async def answer(body: AnswerRequest, user: User = Depends(get_user_or_404),
                  container: ServiceContainer = Depends(get_container)):
-    result = await container.nlp_controller(with_generation=True).answer(
+    nlp = await asyncio.to_thread(container.nlp_controller, with_generation=True)
+    result = await nlp.answer(
         user, body.query, limit=body.limit, language=body.language,
         history=[turn.model_dump() for turn in body.history], **_search_kwargs(body),
     )
@@ -59,7 +62,7 @@ async def answer(body: AnswerRequest, user: User = Depends(get_user_or_404),
 async def answer_stream(body: AnswerRequest, user: User = Depends(get_user_or_404),
                         container: ServiceContainer = Depends(get_container)):
     """Server-Sent Events: `sources` (JSON list), many `token` events, then `done` or `error`."""
-    nlp = container.nlp_controller(with_generation=True)
+    nlp = await asyncio.to_thread(container.nlp_controller, with_generation=True)
 
     async def events():
         try:
@@ -83,6 +86,10 @@ async def answer_stream(body: AnswerRequest, user: User = Depends(get_user_or_40
         except LLMError as exc:
             logger.error("Streaming answer failed: %s", exc)
             yield {"event": "error", "data": ResponseSignal.PROVIDER_ERROR.value}
+        except Exception:
+            # Headers are already sent, so report the failure in-band instead of truncating.
+            logger.exception("Streaming answer failed")
+            yield {"event": "error", "data": ResponseSignal.INTERNAL_ERROR.value}
 
     return EventSourceResponse(events())
 
@@ -91,10 +98,13 @@ async def answer_stream(body: AnswerRequest, user: User = Depends(get_user_or_40
 async def rebuild_index(user: User = Depends(get_user_or_404),
                         container: ServiceContainer = Depends(get_container)):
     """Re-embed every stored chunk, e.g. after changing EMBEDDING_MODEL. No re-transcription."""
-    nlp = container.nlp_controller(with_reranker=False)
+    videos = {v.id: v for v in await VideoModel(container.db_client).list_user_videos(user.id)}
+    if any(v.status == VideoStatus.PROCESSING for v in videos.values()):
+        raise AppError(status.HTTP_409_CONFLICT, ResponseSignal.VIDEO_IS_PROCESSING,
+                       "Wait for running processing jobs to finish before rebuilding the index")
+    nlp = await asyncio.to_thread(container.nlp_controller, with_reranker=False)
     await nlp.reset_collection(user)
 
-    videos = {v.id: v for v in await VideoModel(container.db_client).list_user_videos(user.id)}
     indexed = 0
     async for page in ChunkModel(container.db_client).iter_user_chunks(user.id):
         by_video: dict = {}

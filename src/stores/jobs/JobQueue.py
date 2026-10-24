@@ -22,6 +22,7 @@ class ArqJobQueue(JobQueueInterface):
     def __init__(self, redis_url: str):
         self.redis_url = redis_url
         self.pool = None
+        self._connect_lock = asyncio.Lock()
 
     async def connect(self):
         from arq import create_pool
@@ -30,8 +31,9 @@ class ArqJobQueue(JobQueueInterface):
         self.pool = await create_pool(RedisSettings.from_dsn(self.redis_url))
 
     async def enqueue_process(self, job_id: str) -> None:
-        if self.pool is None:
-            await self.connect()
+        async with self._connect_lock:  # concurrent first calls must not create two pools
+            if self.pool is None:
+                await self.connect()
         # _job_id makes enqueueing idempotent: the same job can't run twice concurrently.
         await self.pool.enqueue_job(PROCESS_JOB_FUNCTION, job_id, _job_id=job_id)
 

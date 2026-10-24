@@ -11,6 +11,7 @@ class ResponseSignal(Enum):
     VIDEO_IS_LIVE = "video_is_live"
     VIDEO_NOT_FOUND = "video_not_found"
     VIDEO_DELETED = "video_deleted"
+    VIDEO_IS_PROCESSING = "video_is_processing"
     VIDEOS_LISTED = "videos_listed"
 
     # Processing

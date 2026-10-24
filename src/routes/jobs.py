@@ -37,14 +37,13 @@ async def process_videos(body: ProcessRequest, user: User = Depends(get_user_or_
         videos = await video_model.list_user_videos(user.id, statuses)
 
     if not body.reprocess:
-        # Skip finished videos and ones already queued or running. `reprocess=true` overrides
-        # this, which also recovers videos left "processing" by a crashed worker.
-        videos = [v for v in videos
-                  if v.status not in (VideoStatus.INDEXED, VideoStatus.PROCESSING)]
+        videos = [v for v in videos if v.status != VideoStatus.INDEXED]
+    nothing_to_do = AppError(
+        status.HTTP_409_CONFLICT, ResponseSignal.NO_VIDEOS_TO_PROCESS,
+        "Nothing to process: videos are already indexed or in progress "
+        "(use reprocess=true to rebuild indexed videos)")
     if not videos:
-        raise AppError(status.HTTP_409_CONFLICT, ResponseSignal.NO_VIDEOS_TO_PROCESS,
-                       "Nothing to process: videos are already indexed or in progress "
-                       "(use reprocess=true to rebuild indexed videos)")
+        raise nothing_to_do
 
     s = container.settings
     options = ProcessOptions(
@@ -54,7 +53,10 @@ async def process_videos(body: ProcessRequest, user: User = Depends(get_user_or_
         include_visual=body.include_visual,
         language=body.language,
     )
+    # Videos already queued or running are skipped atomically inside queue_processing.
     job = await JobController(container).queue_processing(user, videos, options)
+    if job is None:
+        raise nothing_to_do
     return JobResponse(signal=ResponseSignal.PROCESSING_QUEUED.value, job=JobOut.from_job(job))
 
 

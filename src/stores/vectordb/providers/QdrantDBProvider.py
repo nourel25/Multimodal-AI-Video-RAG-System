@@ -131,6 +131,8 @@ class QdrantDBProvider(VectorDBInterface):
         if mode != SearchMode.DENSE and sparse_query is None:
             mode = SearchMode.DENSE
 
+        if mode == SearchMode.DENSE and dense_vector is None:
+            return []  # sparse-only query with no indexable terms: nothing to rank by
         if mode == SearchMode.DENSE:
             response = await self.client.query_points(
                 collection_name=collection_name, query=dense_vector, using=DENSE,

@@ -57,17 +57,14 @@ class NLPController:
     async def reset_collection(self, user: User) -> None:
         await self.vectordb_client.delete_collection(self.create_collection_name(user.user_id))
 
-    async def index_chunks(self, user: User, video: Video, chunks: list[Chunk]) -> int:
+    async def build_records(self, video: Video, chunks: list[Chunk]) -> list[VectorRecord]:
+        """Embed chunks (the slow, failure-prone step) without writing anything yet."""
         if not chunks:
-            return 0
-        collection_name = self.create_collection_name(user.user_id)
+            return []
         texts = [chunk.chunk_text for chunk in chunks]
-
         dense = await asyncio.to_thread(self.embedder.embed_documents, texts)
         sparse = [self.sparse_encoder.encode_document(text) for text in texts]
-
-        await self.vectordb_client.create_collection(collection_name, self.embedder.size)
-        records = [
+        return [
             VectorRecord(
                 id=point_id(str(chunk.id)),
                 dense=dense[i],
@@ -87,7 +84,16 @@ class NLPController:
             )
             for i, chunk in enumerate(chunks)
         ]
+
+    async def upsert_records(self, user: User, records: list[VectorRecord]) -> int:
+        if not records:
+            return 0
+        collection_name = self.create_collection_name(user.user_id)
+        await self.vectordb_client.create_collection(collection_name, self.embedder.size)
         return await self.vectordb_client.upsert_records(collection_name, records)
+
+    async def index_chunks(self, user: User, video: Video, chunks: list[Chunk]) -> int:
+        return await self.upsert_records(user, await self.build_records(video, chunks))
 
     async def delete_video_vectors(self, user: User, video_id: str) -> None:
         await self.vectordb_client.delete_by_video(

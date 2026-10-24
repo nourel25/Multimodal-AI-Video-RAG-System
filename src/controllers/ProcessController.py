@@ -8,6 +8,8 @@ import contextlib
 import logging
 import os
 
+from bson import ObjectId
+
 from models.ChunkModel import ChunkModel
 from models.db_schemas import Chunk, Job, JobVideoResult, User, Video
 from models.db_schemas.base import utc_now
@@ -52,7 +54,20 @@ class ProcessController:
         if job is None:
             logger.error("Job %s not found", job_id)
             return
+        try:
+            await self._run(job)
+        except BaseException as exc:
+            # Cancellation (shutdown, timeout) or an unexpected error: never leave the job
+            # "running" or its videos "processing".
+            message = f"Processing stopped: {exc!r}"
+            logger.error("Job %s aborted: %s", job.id, message)
+            await self.video_model.fail_processing(job.video_ids, message)
+            await self.job_model.update_job(job.id, status=JobStatus.FAILED, error=message,
+                                            stage=JobStage.DONE, current_video_id=None,
+                                            finished_at=utc_now())
+            raise
 
+    async def _run(self, job: Job) -> None:
         user = await self.user_model.get_user(job.user_id)
         await self.job_model.update_job(job.id, status=JobStatus.RUNNING)
         failures = 0
@@ -100,14 +115,17 @@ class ProcessController:
                                                           media_files)
 
             await set_stage(JobStage.INDEXING)
-            nlp = self.container.nlp_controller(with_reranker=False)
-            # Re-processing replaces the previous chunks and vectors of this video; done only
-            # now so a failed run never wipes a previously indexed video.
+            nlp = await asyncio.to_thread(self.container.nlp_controller, with_reranker=False)
+            chunks = self._to_chunk_documents(user, video, transcript_chunks, visual_chunks)
+            # Embed before touching stored data: if embedding fails, a previously indexed
+            # version of this video stays searchable.
+            records = await nlp.build_records(video, chunks)
+            if await self.video_model.get_video(video.id) is None:
+                raise VideoProcessingError("Video was deleted while it was being processed")
             await self.chunk_model.delete_chunks_by_video_id(video.id)
             await nlp.delete_video_vectors(user, str(video.id))
-            chunks = self._to_chunk_documents(user, video, transcript_chunks, visual_chunks)
-            chunks = await self.chunk_model.insert_many_chunks(chunks)
-            await nlp.index_chunks(user, video, chunks)
+            await self.chunk_model.insert_many_chunks(chunks)
+            await nlp.upsert_records(user, records)
 
             await self.video_model.update_video(
                 video.id, status=VideoStatus.INDEXED, language=language,
@@ -140,7 +158,8 @@ class ProcessController:
         media_files.append(audio_path)
 
         await set_stage(JobStage.TRANSCRIBING)
-        audio = AudioController(self.container.transcriber, self.settings)
+        transcriber = await asyncio.to_thread(lambda: self.container.transcriber)
+        audio = AudioController(transcriber, self.settings)
         transcription = await asyncio.to_thread(audio.transcribe, audio_path,
                                                 job.options.language)
         if not transcription.segments:
@@ -161,7 +180,7 @@ class ProcessController:
     async def _visual_chunks(self, user, video, language, set_stage, media_files):
         # The visual pipeline is best-effort: a failure here must not lose the transcript.
         try:
-            vision_client = self.container.vision_client
+            vision_client = await asyncio.to_thread(lambda: self.container.vision_client)
             if vision_client is None:
                 return []
             await set_stage(JobStage.EXTRACTING_FRAMES)
@@ -188,6 +207,7 @@ class ProcessController:
                   [(c, Modality.VISUAL) for c in visual]
         return [
             Chunk(
+                _id=ObjectId(),
                 chunk_user_id=user.id,
                 chunk_video_id=video.id,
                 chunk_text=chunk.text,

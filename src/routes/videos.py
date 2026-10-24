@@ -10,7 +10,7 @@ from core.container import ServiceContainer
 from helpers.youtube import extract_video_id, watch_url
 from models.ChunkModel import ChunkModel
 from models.db_schemas import ProcessOptions, User, Video
-from models.enums import ResponseSignal
+from models.enums import ResponseSignal, VideoStatus
 from models.UserModel import UserModel
 from models.VideoModel import VideoModel
 
@@ -145,6 +145,9 @@ async def get_video(video_id: str, user: User = Depends(get_user_or_404),
 async def delete_video(video_id: str, user: User = Depends(get_user_or_404),
                        container: ServiceContainer = Depends(get_container)):
     video = await _get_video_or_404(container, user, video_id)
+    if video.status == VideoStatus.PROCESSING:
+        raise AppError(status.HTTP_409_CONFLICT, ResponseSignal.VIDEO_IS_PROCESSING,
+                       "Wait for the processing job to finish before deleting this video")
     deleted = await ChunkModel(container.db_client).delete_chunks_by_video_id(video.id)
     await container.vectordb.delete_by_video(NLPController.create_collection_name(user.user_id),
                                              str(video.id))

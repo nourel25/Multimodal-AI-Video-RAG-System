@@ -79,6 +79,13 @@ class ServiceContainer:
                         mongo_client=mongo_client)
         if with_job_queue:
             container.job_queue = container.build_job_queue()
+            if settings.JOB_QUEUE_BACKEND.lower() != "arq":
+                # In-process jobs die with the process; queued ARQ jobs survive in Redis.
+                from controllers.JobController import JobController
+                from models.enums import JobStatus
+
+                await JobController(container).recover_interrupted(
+                    [JobStatus.QUEUED, JobStatus.RUNNING])
         return container
 
     def build_job_queue(self) -> JobQueueInterface:

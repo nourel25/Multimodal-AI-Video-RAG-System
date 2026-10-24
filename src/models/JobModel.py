@@ -4,7 +4,7 @@ from bson.errors import InvalidId
 from .BaseDataModel import BaseDataModel
 from .db_schemas import Job, JobVideoResult
 from .db_schemas.base import to_bson_value
-from .enums import DataBaseEnum
+from .enums import DataBaseEnum, JobStatus
 
 
 class JobModel(BaseDataModel):
@@ -25,6 +25,10 @@ class JobModel(BaseDataModel):
             return None
         record = await self.collection.find_one({"_id": object_id})
         return Job(**record) if record else None
+
+    async def list_jobs_by_status(self, statuses: list[JobStatus]) -> list[Job]:
+        cursor = self.collection.find({"status": {"$in": [s.value for s in statuses]}})
+        return [Job(**doc) for doc in await cursor.to_list(length=None)]
 
     async def list_user_jobs(self, user_object_id: ObjectId, limit: int = 10) -> list[Job]:
         cursor = self.collection.find({"job_user_id": user_object_id}).sort("created_at", -1)
