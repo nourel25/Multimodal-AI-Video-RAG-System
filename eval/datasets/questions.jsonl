@@ -1,0 +1,80 @@
+{"id": "docker-1", "language": "en", "question": "How is a container different from a virtual machine?", "windows": [{"video_id": "Gjnup-PuquQ", "start": 32, "end": 44}]}
+{"id": "docker-2", "language": "en", "question": "Why are virtual machines considered bulky and slow?", "windows": [{"video_id": "Gjnup-PuquQ", "start": 24, "end": 32}]}
+{"id": "docker-3", "language": "en", "question": "What are the three core building blocks of Docker?", "windows": [{"video_id": "Gjnup-PuquQ", "start": 47, "end": 53}]}
+{"id": "docker-4", "language": "en", "question": "Why is a Dockerfile compared to DNA?", "windows": [{"video_id": "Gjnup-PuquQ", "start": 53, "end": 63}]}
+{"id": "docker-5", "language": "en", "question": "Which command turns a Dockerfile into an image?", "windows": [{"video_id": "Gjnup-PuquQ", "start": 92, "end": 99}]}
+{"id": "docker-6", "language": "en", "question": "How do I start a container from an image?", "windows": [{"video_id": "Gjnup-PuquQ", "start": 99, "end": 103}]}
+{"id": "docker-7", "language": "en", "question": "Where do base images such as Ubuntu come from?", "windows": [{"video_id": "Gjnup-PuquQ", "start": 69, "end": 80}]}
+{"id": "docker-8", "language": "en", "question": "What problem appears when you share an app with a friend who runs a different system?", "windows": [{"video_id": "Gjnup-PuquQ", "start": 7, "end": 19}]}
+{"id": "k8s-1", "language": "en", "question": "What analogy is used to explain Kubernetes?", "windows": [{"video_id": "PziYflu8cB8", "start": 5, "end": 17}]}
+{"id": "k8s-2", "language": "en", "question": "What is the control plane responsible for?", "windows": [{"video_id": "PziYflu8cB8", "start": 36, "end": 44}]}
+{"id": "k8s-3", "language": "en", "question": "Which key-value database stores the cluster's state?", "windows": [{"video_id": "PziYflu8cB8", "start": 44, "end": 49}]}
+{"id": "k8s-4", "language": "en", "question": "What is a kubelet?", "windows": [{"video_id": "PziYflu8cB8", "start": 54, "end": 61}]}
+{"id": "k8s-5", "language": "en", "question": "What is the smallest deployable unit in Kubernetes?", "windows": [{"video_id": "PziYflu8cB8", "start": 61, "end": 70}]}
+{"id": "k8s-6", "language": "en", "question": "How does Kubernetes cope when the workload increases?", "windows": [{"video_id": "PziYflu8cB8", "start": 70, "end": 75}]}
+{"id": "k8s-7", "language": "en", "question": "How does Kubernetes achieve high availability?", "windows": [{"video_id": "PziYflu8cB8", "start": 81, "end": 90}]}
+{"id": "k8s-8", "language": "en", "question": "In which format do developers describe the desired state of a cluster?", "windows": [{"video_id": "PziYflu8cB8", "start": 90, "end": 104}]}
+{"id": "k8s-9", "language": "en", "question": "Why would a stock trading app need container orchestration?", "windows": [{"video_id": "PziYflu8cB8", "start": 17, "end": 29}]}
+{"id": "python-1", "language": "en", "question": "Who created Python and when was it released?", "windows": [{"video_id": "x7X9w_GIm1s", "start": 14, "end": 19}]}
+{"id": "python-2", "language": "en", "question": "Where does the name of the Python language come from?", "windows": [{"video_id": "x7X9w_GIm1s", "start": 19, "end": 28}]}
+{"id": "python-3", "language": "en", "question": "Why do Python code samples use spam and eggs instead of foo and bar?", "windows": [{"video_id": "x7X9w_GIm1s", "start": 19, "end": 28}]}
+{"id": "python-4", "language": "en", "question": "Is Python statically or dynamically typed?", "windows": [{"video_id": "x7X9w_GIm1s", "start": 67, "end": 75}]}
+{"id": "python-5", "language": "en", "question": "What does Python use instead of curly braces to define scope?", "windows": [{"video_id": "x7X9w_GIm1s", "start": 83, "end": 108}]}
+{"id": "python-6", "language": "en", "question": "How are third-party libraries usually installed?", "windows": [{"video_id": "x7X9w_GIm1s", "start": 121, "end": 134}]}
+{"id": "python-7", "language": "en", "question": "Which file extension creates an interactive notebook?", "windows": [{"video_id": "x7X9w_GIm1s", "start": 56, "end": 67}]}
+{"id": "python-8", "language": "en", "question": "Which programming paradigms does Python support?", "windows": [{"video_id": "x7X9w_GIm1s", "start": 108, "end": 121}]}
+{"id": "fastapi-1", "language": "en", "question": "How does FastAPI use Python type hints?", "windows": [{"video_id": "umbU5Pk03CM", "start": 24, "end": 41}]}
+{"id": "fastapi-2", "language": "en", "question": "What happens when a request contains invalid data?", "windows": [{"video_id": "umbU5Pk03CM", "start": 41, "end": 51}]}
+{"id": "fastapi-3", "language": "en", "question": "Which URL path shows the interactive API docs?", "windows": [{"video_id": "umbU5Pk03CM", "start": 89, "end": 94}]}
+{"id": "fastapi-4", "language": "en", "question": "Which server is installed alongside FastAPI to run the app?", "windows": [{"video_id": "umbU5Pk03CM", "start": 74, "end": 84}]}
+{"id": "fastapi-5", "language": "en", "question": "What port does the server listen on by default?", "windows": [{"video_id": "umbU5Pk03CM", "start": 84, "end": 89}]}
+{"id": "fastapi-6", "language": "en", "question": "What was wrong with Flask and Django according to the video?", "windows": [{"video_id": "umbU5Pk03CM", "start": 5, "end": 16}]}
+{"id": "fastapi-7", "language": "en", "question": "What kinds of projects use FastAPI today?", "windows": [{"video_id": "umbU5Pk03CM", "start": 99, "end": 109}]}
+{"id": "rag-1", "language": "en", "question": "Who presents the RAG explanation and where does she work?", "windows": [{"video_id": "T-D1OfcDW1M", "start": 6, "end": 12}]}
+{"id": "rag-2", "language": "en", "question": "Which planet has the most moons according to the corrected answer?", "windows": [{"video_id": "T-D1OfcDW1M", "start": 115, "end": 124}]}
+{"id": "rag-3", "language": "en", "question": "What two problems did the moons anecdote illustrate?", "windows": [{"video_id": "T-D1OfcDW1M", "start": 83, "end": 98}]}
+{"id": "rag-4", "language": "en", "question": "What is the content store in retrieval augmented generation?", "windows": [{"video_id": "T-D1OfcDW1M", "start": 179, "end": 195}]}
+{"id": "rag-5", "language": "en", "question": "What parts does the prompt contain in the RAG framework?", "windows": [{"video_id": "T-D1OfcDW1M", "start": 247, "end": 267}]}
+{"id": "rag-6", "language": "en", "question": "How does RAG keep answers current without retraining the model?", "windows": [{"video_id": "T-D1OfcDW1M", "start": 273, "end": 298}]}
+{"id": "rag-7", "language": "en", "question": "Why is a RAG model less likely to hallucinate or leak data?", "windows": [{"video_id": "T-D1OfcDW1M", "start": 304, "end": 322}]}
+{"id": "rag-8", "language": "en", "question": "When should the model answer that it does not know?", "windows": [{"video_id": "T-D1OfcDW1M", "start": 322, "end": 345}]}
+{"id": "rag-9", "language": "en", "question": "What happens if the retriever is not good enough?", "windows": [{"video_id": "T-D1OfcDW1M", "start": 340, "end": 362}]}
+{"id": "rag-10", "language": "en", "question": "What are IBM researchers working on to improve RAG?", "windows": [{"video_id": "T-D1OfcDW1M", "start": 356, "end": 381}]}
+{"id": "ml-eg-1", "language": "ar", "question": "ما هو تعلم الآلة ببساطة؟", "windows": [{"video_id": "fKAvGvdpOdI", "start": 4, "end": 21}]}
+{"id": "ml-eg-2", "language": "ar", "question": "ما الفرق بين البرمجة التقليدية وتعلم الآلة؟", "windows": [{"video_id": "fKAvGvdpOdI", "start": 22, "end": 40}]}
+{"id": "ml-eg-3", "language": "ar", "question": "ما أمثلة تعلم الآلة في حياتنا اليومية؟", "windows": [{"video_id": "fKAvGvdpOdI", "start": 40, "end": 67}]}
+{"id": "ml-eg-4", "language": "ar", "question": "كيف ترشح نتفليكس الأفلام والمسلسلات للمستخدم؟", "windows": [{"video_id": "fKAvGvdpOdI", "start": 55, "end": 60}]}
+{"id": "ml-eg-5", "language": "ar", "question": "كيف يمكن للآلة توقع أسعار منازل جديدة؟", "windows": [{"video_id": "fKAvGvdpOdI", "start": 91, "end": 107}]}
+{"id": "ml-eg-6", "language": "ar", "question": "ما هو التعلم غير الخاضع للإشراف؟", "windows": [{"video_id": "fKAvGvdpOdI", "start": 107, "end": 123}, {"video_id": "xuTLxXpQt4E", "start": 460, "end": 472}]}
+{"id": "ml-eg-7", "language": "ar", "question": "كيف تستفيد مواقع التسوق الإلكتروني من بيانات سلوك الشراء؟", "windows": [{"video_id": "fKAvGvdpOdI", "start": 123, "end": 138}]}
+{"id": "ml-eg-8", "language": "ar", "question": "كيف تتعلم الآلة في التعلم المعزز؟", "windows": [{"video_id": "fKAvGvdpOdI", "start": 141, "end": 155}]}
+{"id": "ml-eg-9", "language": "ar", "question": "ما أشهر أمثلة التعلم المعزز؟", "windows": [{"video_id": "fKAvGvdpOdI", "start": 155, "end": 159}]}
+{"id": "ml-shared-1", "language": "ar", "question": "ما هو التعلم الخاضع للإشراف؟", "windows": [{"video_id": "fKAvGvdpOdI", "start": 76, "end": 91}, {"video_id": "xuTLxXpQt4E", "start": 17, "end": 33}]}
+{"id": "models-1", "language": "ar", "question": "متى نستخدم الانحدار الخطي؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 34, "end": 53}]}
+{"id": "models-2", "language": "ar", "question": "كيف يجد الانحدار الخطي أفضل خط؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 54, "end": 68}]}
+{"id": "models-3", "language": "ar", "question": "ما الدالة التي تحصر نتائج الانحدار اللوجستي بين صفر وواحد؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 79, "end": 97}]}
+{"id": "models-4", "language": "ar", "question": "ماذا نستخدم في التصنيف عندما تكون الفئات أكثر من اثنتين؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 98, "end": 106}]}
+{"id": "models-5", "language": "ar", "question": "ما المقاييس التي تقيّم بها شجرة القرار جودة التقسيم؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 129, "end": 142}]}
+{"id": "models-6", "language": "ar", "question": "ما مزايا وعيوب شجرة القرار؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 143, "end": 151}]}
+{"id": "models-7", "language": "ar", "question": "كيف يعمل نموذج أقرب الجيران؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 154, "end": 178}]}
+{"id": "models-8", "language": "ar", "question": "ما الافتراض الذي يقوم عليه نموذج نايف بايز؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 192, "end": 203}]}
+{"id": "models-9", "language": "ar", "question": "ما هي طريقة حقيبة الكلمات لتمثيل النصوص؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 204, "end": 228}]}
+{"id": "models-10", "language": "ar", "question": "ما هي النقاط الداعمة في آلة الدعم SVM؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 256, "end": 266}]}
+{"id": "models-11", "language": "ar", "question": "ماذا تفعل SVM عندما لا تكون البيانات قابلة للفصل الخطي؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 274, "end": 287}]}
+{"id": "models-12", "language": "ar", "question": "كيف تقلل الغابة العشوائية الترابط بين الأشجار؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 308, "end": 328}]}
+{"id": "models-13", "language": "ar", "question": "على ماذا يركز AdaBoost في كل جولة تدريب؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 347, "end": 366}]}
+{"id": "models-14", "language": "ar", "question": "ما عيوب التعزيز التدرجي مقارنة بغيره؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 391, "end": 398}]}
+{"id": "models-15", "language": "ar", "question": "مما تتكون الشبكة العصبية؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 403, "end": 419}]}
+{"id": "models-16", "language": "ar", "question": "كيف يتم تدريب الشبكات العصبية؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 430, "end": 439}]}
+{"id": "models-17", "language": "ar", "question": "ما خطوات خوارزمية K-means؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 474, "end": 494}]}
+{"id": "models-18", "language": "ar", "question": "ما فائدة تحليل المكونات الرئيسية؟", "windows": [{"video_id": "xuTLxXpQt4E", "start": 504, "end": 531}]}
+{"id": "xl-1", "language": "ar", "question": "ماذا حدث للروبوت عندما لم يجد زجاجة ماء في الثلاجة؟", "windows": [{"video_id": "qQM1n7ehpT8", "start": 17, "end": 39}], "tags": ["cross_lingual"]}
+{"id": "xl-2", "language": "ar", "question": "ما الفرق بين الإنسان والروبوت في مثال الثلاجة؟", "windows": [{"video_id": "qQM1n7ehpT8", "start": 83, "end": 91}], "tags": ["cross_lingual"]}
+{"id": "xl-3", "language": "ar", "question": "لماذا فكر علماء الذكاء الاصطناعي في تعلم الآلة؟", "windows": [{"video_id": "qQM1n7ehpT8", "start": 92, "end": 107}], "tags": ["cross_lingual"]}
+{"id": "xl-4", "language": "ar", "question": "ما موضوع الدرس التالي بعد تعريف التعلم الآلي؟", "windows": [{"video_id": "qQM1n7ehpT8", "start": 130, "end": 135}], "tags": ["cross_lingual"]}
+{"id": "ai-eg-1", "language": "ar", "question": "ما الفرق بين الذكاء الاصطناعي والبرامج التقليدية على الكمبيوتر؟", "windows": [{"video_id": "75H-k8yOhZo", "start": 0, "end": 40}, {"video_id": "fKAvGvdpOdI", "start": 22, "end": 40}]}
+{"id": "ai-eg-2", "language": "ar", "question": "لماذا يُشبَّه الذكاء الاصطناعي بطفل صغير؟", "windows": [{"video_id": "75H-k8yOhZo", "start": 35, "end": 57}]}
+{"id": "ai-eg-3", "language": "ar", "question": "لماذا يملك الكمبيوتر قدرات خارقة مقارنة بالإنسان؟", "windows": [{"video_id": "75H-k8yOhZo", "start": 75, "end": 93}]}
+{"id": "ai-eg-4", "language": "ar", "question": "ما هي نقطة التفرد singularity؟", "windows": [{"video_id": "75H-k8yOhZo", "start": 97, "end": 113}]}
+{"id": "ai-eg-5", "language": "ar", "question": "هل الذكاء الاصطناعي اليوم أذكى من الإنسان؟", "windows": [{"video_id": "75H-k8yOhZo", "start": 93, "end": 97}]}
+{"id": "ai-eg-6", "language": "ar", "question": "ماذا سيحدث لمن لا يستفيد من الذكاء الاصطناعي؟", "windows": [{"video_id": "75H-k8yOhZo", "start": 130, "end": 148}]}
