@@ -22,7 +22,7 @@ class GeminiProvider(LLMInterface):
 
     def __init__(self, api_key: str, model_id: str, *, temperature: float = 0.1,
                  max_tokens: int = 1024, max_retries: int = 3,
-                 requests_per_minute: float = 0):
+                 requests_per_minute: float = 0, thinking_level: str = ""):
         if not api_key:
             raise ProviderConfigError("GEMINI_API_KEY is required for the GEMINI backend")
         self.client = genai.Client(api_key=api_key)
@@ -30,6 +30,8 @@ class GeminiProvider(LLMInterface):
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.max_retries = max_retries
+        self.thinking = (types.ThinkingConfig(thinking_level=thinking_level.upper())
+                         if thinking_level else None)
         self.limiter = shared_limiter(f"gemini:{model_id}", requests_per_minute)
 
     def _call(self, fn):
@@ -51,6 +53,7 @@ class GeminiProvider(LLMInterface):
             system_instruction=system or None,
             temperature=self.temperature if temperature is None else temperature,
             max_output_tokens=max_tokens or self.max_tokens,
+            thinking_config=self.thinking,
         )
         return contents, config
 
@@ -64,10 +67,18 @@ class GeminiProvider(LLMInterface):
     def stream(self, messages: list[ChatMessage], *, temperature=None, max_tokens=None
                ) -> Iterator[str]:
         contents, config = self._build_request(messages, temperature, max_tokens)
-        chunks = self._call(lambda: self.client.models.generate_content_stream(
-            model=self.model_id, contents=contents, config=config,
-        ))
+
+        def open_stream():
+            # The SDK only sends the request when iterated, so pull the first chunk here:
+            # that way overload/rate-limit errors happen inside the retried call.
+            chunks = iter(self.client.models.generate_content_stream(
+                model=self.model_id, contents=contents, config=config))
+            return next(chunks, None), chunks
+
+        first, chunks = self._call(open_stream)
         try:
+            if first is not None and first.text:
+                yield first.text
             for chunk in chunks:
                 if chunk.text:
                     yield chunk.text
@@ -76,7 +87,8 @@ class GeminiProvider(LLMInterface):
 
     def describe_image(self, image: bytes, prompt: str, mime_type: str = "image/jpeg") -> str:
         contents = [types.Part.from_bytes(data=image, mime_type=mime_type), prompt]
-        config = types.GenerateContentConfig(temperature=0.0, max_output_tokens=self.max_tokens)
+        config = types.GenerateContentConfig(temperature=0.0, max_output_tokens=self.max_tokens,
+                                             thinking_config=self.thinking)
         response = self._call(lambda: self.client.models.generate_content(
             model=self.model_id, contents=contents, config=config,
         ))

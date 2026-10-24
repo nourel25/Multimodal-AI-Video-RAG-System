@@ -31,13 +31,15 @@ class LLMProviderFactory:
             if not model:
                 raise ProviderConfigError("GROQ_VISION_MODEL must be set to use Groq for vision")
             return GroqProvider(api_key=s.GROQ_API_KEY, model_id=model,
-                                requests_per_minute=s.GROQ_REQUESTS_PER_MINUTE, **common)
+                                requests_per_minute=s.GROQ_REQUESTS_PER_MINUTE,
+                                reasoning_effort=s.GROQ_REASONING_EFFORT, **common)
 
         if backend == LLMBackend.GEMINI.value:
             from .providers.GeminiProvider import GeminiProvider
             model = s.GEMINI_VISION_MODEL if vision else s.GEMINI_MODEL
             return GeminiProvider(api_key=s.GEMINI_API_KEY, model_id=model,
-                                  requests_per_minute=s.GEMINI_REQUESTS_PER_MINUTE, **common)
+                                  requests_per_minute=s.GEMINI_REQUESTS_PER_MINUTE,
+                                  thinking_level=s.GEMINI_THINKING_LEVEL, **common)
 
         raise ProviderConfigError(f"Unsupported LLM backend: {backend!r}")
 

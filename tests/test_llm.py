@@ -123,3 +123,12 @@ def test_retry_waits_what_the_provider_asks(monkeypatch):
 
     assert call_with_retry(limited, provider="t", is_transient=lambda e: True) == "ok"
     assert waits == [3.0]
+
+
+def test_groq_language_names_become_iso_codes():
+    from stores.transcription.providers.GroqWhisperProvider import language_code
+
+    assert language_code("English") == "en"
+    assert language_code("Arabic") == "ar"
+    assert language_code("ar") == "ar"
+    assert language_code(None) is None

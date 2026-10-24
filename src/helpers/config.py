@@ -58,12 +58,18 @@ class Settings(BaseSettings):
     OLLAMA_VISION_MODEL: str = "llava"
 
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
+    # Reasoning models (gpt-oss, qwen3) spend tokens thinking; "low" keeps answers fast.
+    # Leave empty for models without reasoning (e.g. allam-2-7b).
+    GROQ_REASONING_EFFORT: str = "low"
     GROQ_VISION_MODEL: str = ""
 
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.6-flash"
     GEMINI_VISION_MODEL: str = "gemini-3.6-flash"
+    # Gemini 3 thinks before answering; with a small token budget the reply can come back
+    # empty. minimal | low | medium | high, or empty for the model default.
+    GEMINI_THINKING_LEVEL: str = "low"
 
     # ========================= Vision =========================
     VISION_BACKEND: str = "GEMINI"  # GEMINI | OLLAMA | GROQ; empty disables frame analysis

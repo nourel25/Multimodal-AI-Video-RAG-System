@@ -8,6 +8,7 @@ system_prompt = Template(
             "descriptions of what is shown on screen.",
             "Answer using only the information in the sources.",
             "Cite every claim with its source number in square brackets, e.g. [1] or [2][3].",
+            "Use only that plain [n] format for citations, never any other citation style.",
             "Ignore sources that are not relevant to the question.",
             "If the sources do not contain the answer, say so plainly instead of guessing.",
             "Answer in the same language as the user's question.",

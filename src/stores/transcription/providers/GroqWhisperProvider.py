@@ -19,6 +19,19 @@ from ..TranscriptionInterface import (
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 
 
+# Groq's verbose_json reports the language by name ("English"); store ISO codes like local
+# Whisper does, so the prompt language and stored metadata stay consistent.
+_LANGUAGE_CODES = {"english": "en", "arabic": "ar", "french": "fr", "german": "de",
+                   "spanish": "es", "turkish": "tr", "urdu": "ur", "hindi": "hi"}
+
+
+def language_code(language: str | None) -> str | None:
+    if not language:
+        return None
+    language = language.strip().lower()
+    return _LANGUAGE_CODES.get(language, language)
+
+
 def _field(item, name):
     return item.get(name) if isinstance(item, dict) else getattr(item, name, None)
 
@@ -74,4 +87,5 @@ class GroqWhisperProvider(TranscriptionInterface):
         ]
         if not segments and (text := (_field(response, "text") or "").strip()):
             segments = [TranscriptSegment(start=0.0, end=0.0, text=text)]
-        return TranscriptionResult(segments=segments, language=_field(response, "language"))
+        return TranscriptionResult(segments=segments,
+                                   language=language_code(_field(response, "language")))

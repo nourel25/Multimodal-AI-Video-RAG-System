@@ -44,7 +44,7 @@ class wait_retry_after:
     """Honor the provider's Retry-After when given, else jittered exponential backoff."""
 
     def __init__(self, fallback=None, max_wait: float = MAX_RETRY_AFTER_SECONDS):
-        self.fallback = fallback or wait_random_exponential(multiplier=1, max=20)
+        self.fallback = fallback or wait_random_exponential(multiplier=1, min=1, max=20)
         self.max_wait = max_wait
 
     def __call__(self, retry_state: RetryCallState) -> float:

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from starlette.concurrency import iterate_in_threadpool
 
+from helpers.citations import StreamingCitationNormalizer, normalize_citations
 from helpers.config import Settings
 from helpers.text import detect_language
 from helpers.youtube import format_timestamp
@@ -182,7 +183,8 @@ class NLPController:
         language = self._language(query, language)
         messages = self.build_messages(query, documents, language, history)
         answer = await asyncio.to_thread(self.generation_client.generate, messages)
-        return AnswerResult(answer=answer.strip(), sources=documents, language=language)
+        return AnswerResult(answer=normalize_citations(answer).strip(), sources=documents,
+                            language=language)
 
     async def stream_answer(self, user: User, query: str, *, limit: int = 5,
                             language: str | None = None,
@@ -195,5 +197,9 @@ class NLPController:
             return
         language = self._language(query, language)
         messages = self.build_messages(query, documents, language, history)
+        citations = StreamingCitationNormalizer()
         async for token in iterate_in_threadpool(self.generation_client.stream(messages)):
-            yield "token", token
+            if text := citations.feed(token):
+                yield "token", text
+        if text := citations.flush():
+            yield "token", text

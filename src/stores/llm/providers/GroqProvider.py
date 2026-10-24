@@ -19,7 +19,7 @@ class GroqProvider(LLMInterface):
 
     def __init__(self, api_key: str, model_id: str, *, temperature: float = 0.1,
                  max_tokens: int = 1024, max_retries: int = 3,
-                 requests_per_minute: float = 0):
+                 requests_per_minute: float = 0, reasoning_effort: str = ""):
         if not api_key:
             raise ProviderConfigError("GROQ_API_KEY is required for the GROQ backend")
         # Retries are handled by call_with_retry so all providers behave the same way.
@@ -28,6 +28,7 @@ class GroqProvider(LLMInterface):
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.max_retries = max_retries
+        self.reasoning_effort = reasoning_effort
         self.limiter = shared_limiter(f"groq:{model_id}", requests_per_minute)
 
     def _call(self, fn):
@@ -35,7 +36,9 @@ class GroqProvider(LLMInterface):
                                max_attempts=self.max_retries, limiter=self.limiter)
 
     def _create(self, messages, temperature, max_tokens, stream: bool):
+        extra = {"reasoning_effort": self.reasoning_effort} if self.reasoning_effort else {}
         return self.client.chat.completions.create(
+            **extra,
             model=self.model_id,
             messages=messages,
             temperature=self.temperature if temperature is None else temperature,

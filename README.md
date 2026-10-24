@@ -12,7 +12,7 @@ dense + BM25 search and cross-encoder reranking**, and streams grounded answers 
 clickable `[n]` citations that jump to the timestamp. Works in **English and Arabic**.
 
 Every model is swappable through configuration: run fully local (faster-whisper, Ollama,
-bge-m3) or use hosted APIs (Groq Whisper and Llama, Gemini vision) with automatic retry and
+bge-m3) or use hosted APIs (Groq Whisper and gpt-oss, Gemini vision) with automatic retry and
 fallback.
 
 <!-- Record a short demo (UI: add a video -> ask a question -> click a citation) and save it as docs/demo.gif -->
@@ -102,8 +102,8 @@ What the numbers say:
 - **Hybrid search fixes recall, reranking fixes ranking.** Adding BM25 lifts Hit@5 from 0.93 to
   0.96 (Arabic 0.89 → 0.95) but slightly lowers Hit@1; the cross-encoder then lifts Hit@1 from
   0.71 to 0.86 and MRR from 0.81 to 0.92 — every question gets a correct source in the top 5.
-- **Cross-lingual questions** (Arabic questions about a video whose transcript came out in
-  English) are where BM25 has nothing to match: sparse Hit@1 is 0, and fusing it in drops Hit@1
+- **Cross-lingual questions** (Arabic questions about an English-narrated video) are where
+  BM25 has nothing to match: sparse Hit@1 is 0, and fusing it in drops Hit@1
   from 0.75 to 0.25. The reranker restores it to 1.00, which is why it is on by default.
 - **GPU matters for reranking:** on CPU the reranker took 3.8 s per query (fp32); on the GPU in
   fp16 it takes 97 ms with identical scores.
