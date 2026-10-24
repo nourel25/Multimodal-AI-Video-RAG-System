@@ -1,44 +1,38 @@
+import importlib
 import os
 
+
 class TemplateParser:
-    def __init__(self, language: str=None, default_language="ar"):
+    def __init__(self, language: str | None = None, default_language: str = "en"):
         self.current_path = os.path.dirname(os.path.abspath(__file__))
         self.default_language = default_language
-        self.language = None
-        
+        self.language = default_language
         self.set_language(language)
-        
-    def set_language(self, language: str):
-        if not language:
-            self.language = self.default_language
-            
-        language_path = os.path.join(self.current_path, "locales", language)
-        if os.path.exists(language_path):
-            self.language = language
-        else:
-            self.language = self.default_language
-            
-    def get(self, group: str, key: str, vars: dict={}):
+
+    def _language_exists(self, language: str) -> bool:
+        return os.path.isdir(os.path.join(self.current_path, "locales", language))
+
+    def set_language(self, language: str | None):
+        self.language = (
+            language if language and self._language_exists(language) else self.default_language
+        )
+
+    def resolve_language(self, language: str | None) -> str:
+        """Return `language` if templates exist for it, else the default."""
+        return language if language and self._language_exists(language) else self.default_language
+
+    def get(self, group: str, key: str, vars: dict | None = None,
+            language: str | None = None) -> str | None:
         if not group or not key:
             return None
-        
-        group_path = os.path.join(self.current_path, "locales",
-                                  self.language, f"{group}.py")
-        targeted_language = self.language
-        
-        if not os.path.exists(group_path):
-            group_path = os.path.join(self.current_path, "locales",
-                                  self.default_language, f"{group}.py")
-            targeted_language = self.default_language
-            
-        if not os.path.exists(group_path):
-            return None
-        
-        # import group module
-        module = __import__(f"stores.templates.locales.{targeted_language}.{group}", fromlist=[group])
-        
-        if not module:
-            return None
-        
-        key_attribute = getattr(module, key)
-        return key_attribute.substitute(vars)
+
+        for candidate in (self.resolve_language(language or self.language),
+                          self.default_language):
+            group_path = os.path.join(self.current_path, "locales", candidate, f"{group}.py")
+            if not os.path.exists(group_path):
+                continue
+            module = importlib.import_module(f"stores.templates.locales.{candidate}.{group}")
+            template = getattr(module, key, None)
+            if template is not None:
+                return template.substitute(vars or {})
+        return None
