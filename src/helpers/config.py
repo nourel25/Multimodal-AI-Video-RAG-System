@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     WHISPER_DEVICE: str = "cpu"
     WHISPER_COMPUTE_TYPE: str = "int8"
     GROQ_WHISPER_MODEL: str = "whisper-large-v3-turbo"
+    # Used when the primary fails (e.g. daily audio quota). LOCAL loads Whisper on this machine.
+    TRANSCRIPTION_FALLBACK_BACKEND: str = ""
 
     # ========================= Generation =========================
     GENERATION_BACKEND: str = "GROQ"  # GROQ | GEMINI | OLLAMA
@@ -45,6 +47,11 @@ class Settings(BaseSettings):
     GENERATION_TEMPERATURE: float = 0.1
     GENERATION_MAX_TOKENS: int = 1024
     LLM_MAX_RETRIES: int = 3
+    # Client-side throttling. Free tiers limit requests per minute and per day: keep these a
+    # little below your plan's limits (0 disables throttling).
+    GROQ_REQUESTS_PER_MINUTE: float = 25
+    GROQ_WHISPER_REQUESTS_PER_MINUTE: float = 15
+    GEMINI_REQUESTS_PER_MINUTE: float = 8
 
     OLLAMA_HOST: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2:1b-instruct-q8_0"
@@ -60,7 +67,9 @@ class Settings(BaseSettings):
 
     # ========================= Vision =========================
     VISION_BACKEND: str = "GEMINI"  # GEMINI | OLLAMA | GROQ; empty disables frame analysis
-    VISION_MAX_FRAMES: int = 24
+    VISION_MAX_FRAMES: int = 12  # = vision API calls per video
+    # Stop captioning a video after this many consecutive API failures (e.g. quota exhausted).
+    VISION_MAX_CONSECUTIVE_FAILURES: int = 3
     VISION_SCENE_THRESHOLD: float = 27.0
     VISION_MIN_SCENE_SECONDS: float = 4.0
 

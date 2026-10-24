@@ -49,3 +49,24 @@ def test_extract_keyframes_from_real_video(settings, tmp_path):
     assert len(keyframes) == 3
     assert keyframes[0].image[:2] == b"\xff\xd8"  # JPEG magic bytes
     assert keyframes[0].start == 0.0
+
+
+class QuotaExhaustedLLM(FakeLLM):
+    def __init__(self):
+        super().__init__()
+        self.attempts = 0
+
+    def describe_image(self, image, prompt, mime_type="image/jpeg"):
+        from stores.llm import LLMError
+
+        self.attempts += 1
+        raise LLMError("429 quota exceeded", provider="fake", transient=True)
+
+
+def test_captioning_stops_after_repeated_failures(settings):
+    llm = QuotaExhaustedLLM()
+    settings.VISION_MAX_CONSECUTIVE_FAILURES = 3
+    vision = VisionController(llm, TemplateParser(default_language="en"), settings)
+    frames = [Keyframe(start=i, end=i + 1, timestamp=i, image=b"x") for i in range(10)]
+    assert vision.caption_keyframes(frames, "Talk") == []
+    assert llm.attempts == 3  # not 10: the circuit breaker saved 7 quota-burning calls

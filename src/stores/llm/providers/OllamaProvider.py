@@ -5,6 +5,7 @@ import httpx
 import ollama
 
 from ..LLMInterface import ChatMessage, LLMError, LLMInterface
+from ..rate_limit import shared_limiter
 from ..retry import call_with_retry
 
 
@@ -18,12 +19,14 @@ class OllamaProvider(LLMInterface):
     name = "ollama"
 
     def __init__(self, host: str, model_id: str, *, temperature: float = 0.1,
-                 max_tokens: int = 1024, max_retries: int = 3):
+                 max_tokens: int = 1024, max_retries: int = 3,
+                 requests_per_minute: float = 0):
         self.client = ollama.Client(host=host)
         self.model_id = model_id
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.max_retries = max_retries
+        self.limiter = shared_limiter(f"ollama:{model_id}", requests_per_minute)
 
     def _options(self, temperature, max_tokens) -> dict:
         return {
@@ -33,7 +36,7 @@ class OllamaProvider(LLMInterface):
 
     def _call(self, fn):
         return call_with_retry(fn, provider=self.name, is_transient=_is_transient,
-                               max_attempts=self.max_retries)
+                               max_attempts=self.max_retries, limiter=self.limiter)
 
     def generate(self, messages: list[ChatMessage], *, temperature=None, max_tokens=None) -> str:
         response = self._call(lambda: self.client.chat(

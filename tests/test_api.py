@@ -224,3 +224,19 @@ async def test_missing_api_key_is_a_clear_503(client, add_and_process, container
 
     health = (await client.get("/api/v1/health")).json()
     assert "GROQ_API_KEY" in health["missing_api_keys"]
+
+
+def test_transcription_falls_back_when_primary_fails(tmp_path):
+    from stores.transcription import TranscriptionError
+    from stores.transcription.TranscriptionProviderFactory import FallbackTranscriber
+
+    class QuotaTranscriber(FakeTranscriber):
+        def transcribe(self, audio_path, language=None):
+            raise TranscriptionError("429 audio quota exceeded")
+
+    built = []
+    transcriber = FallbackTranscriber(QuotaTranscriber(),
+                                      lambda: built.append(1) or FakeTranscriber())
+    assert transcriber.transcribe("audio.webm").language == "en"
+    assert transcriber.transcribe("audio.webm").language == "en"
+    assert built == [1]  # fallback created once, lazily

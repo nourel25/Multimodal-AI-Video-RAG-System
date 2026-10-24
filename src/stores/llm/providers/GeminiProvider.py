@@ -5,6 +5,7 @@ from google.genai import errors, types
 
 from ..LLMEnums import ChatRole
 from ..LLMInterface import ChatMessage, LLMError, LLMInterface, ProviderConfigError
+from ..rate_limit import shared_limiter
 from ..retry import call_with_retry
 
 
@@ -20,7 +21,8 @@ class GeminiProvider(LLMInterface):
     name = "gemini"
 
     def __init__(self, api_key: str, model_id: str, *, temperature: float = 0.1,
-                 max_tokens: int = 1024, max_retries: int = 3):
+                 max_tokens: int = 1024, max_retries: int = 3,
+                 requests_per_minute: float = 0):
         if not api_key:
             raise ProviderConfigError("GEMINI_API_KEY is required for the GEMINI backend")
         self.client = genai.Client(api_key=api_key)
@@ -28,10 +30,11 @@ class GeminiProvider(LLMInterface):
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.max_retries = max_retries
+        self.limiter = shared_limiter(f"gemini:{model_id}", requests_per_minute)
 
     def _call(self, fn):
         return call_with_retry(fn, provider=self.name, is_transient=_is_transient,
-                               max_attempts=self.max_retries)
+                               max_attempts=self.max_retries, limiter=self.limiter)
 
     def _build_request(self, messages: list[ChatMessage], temperature, max_tokens):
         # Gemini takes the system prompt as config and names the assistant role "model".

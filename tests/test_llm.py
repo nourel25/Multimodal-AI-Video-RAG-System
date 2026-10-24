@@ -4,7 +4,8 @@ from helpers.config import Settings
 from stores.llm import LLMError
 from stores.llm.FallbackLLMProvider import FallbackLLMProvider
 from stores.llm.LLMProviderFactory import LLMProviderFactory
-from stores.llm.retry import call_with_retry
+from stores.llm.rate_limit import RateLimiter
+from stores.llm.retry import call_with_retry, retry_after_seconds
 from tests.fakes import FakeLLM
 
 MESSAGES = [{"role": "user", "content": "hi"}]
@@ -78,3 +79,47 @@ def test_factory_wraps_generation_client_with_fallback():
     assert isinstance(client, FallbackLLMProvider)
     assert client.name == "groq->ollama"
     assert LLMProviderFactory(settings).create_vision_client() is None
+
+
+def test_rate_limiter_spaces_calls_evenly():
+    now = [0.0]
+    slept = []
+
+    def sleep(seconds):
+        slept.append(seconds)
+        now[0] += seconds
+
+    limiter = RateLimiter(60, clock=lambda: now[0], sleep=sleep)  # one call per second
+    for _ in range(3):
+        limiter.acquire()
+    assert slept == [1.0, 1.0]
+    now[0] += 5  # idle time is not "saved up" into a burst
+    assert limiter.acquire() == 0
+    assert RateLimiter(0).acquire() == 0
+
+
+class _RateLimited(Exception):
+    def __init__(self, message, headers=None):
+        super().__init__(message)
+        self.response = type("Response", (), {"headers": headers or {}})()
+
+
+def test_retry_after_is_read_from_header_or_body():
+    assert retry_after_seconds(_RateLimited("429", {"retry-after": "7"})) == 7.0
+    assert retry_after_seconds(_RateLimited('quota exceeded "retryDelay": "17s"')) == 17.0
+    assert retry_after_seconds(_RateLimited("429")) is None
+
+
+def test_retry_waits_what_the_provider_asks(monkeypatch):
+    waits = []
+    monkeypatch.setattr("tenacity.nap.time.sleep", waits.append)
+    attempts = []
+
+    def limited():
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise _RateLimited("slow down", {"retry-after": "3"})
+        return "ok"
+
+    assert call_with_retry(limited, provider="t", is_transient=lambda e: True) == "ok"
+    assert waits == [3.0]

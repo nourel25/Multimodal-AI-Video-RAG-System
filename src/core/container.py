@@ -145,7 +145,7 @@ class ServiceContainer:
 
     @lazy_component
     def transcriber(self):
-        return TranscriptionProviderFactory(self.settings).create()
+        return TranscriptionProviderFactory(self.settings).create_with_fallback()
 
     @lazy_component
     def video_controller(self) -> VideoController:

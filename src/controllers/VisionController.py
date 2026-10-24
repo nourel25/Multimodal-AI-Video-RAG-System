@@ -125,11 +125,24 @@ class VisionController(BaseController):
         prompt = self.template_parser.get("vision", "frame_prompt",
                                           {"video_title": video_title}, language=language)
         chunks: list[TimedChunk] = []
+        consecutive_failures = 0
+        max_failures = self.app_settings.VISION_MAX_CONSECUTIVE_FAILURES
         for keyframe in keyframes:
             try:
                 caption = self.vision_llm.describe_image(keyframe.image, prompt).strip()
-            except (LLMError, NotImplementedError) as exc:
+                consecutive_failures = 0
+            except NotImplementedError as exc:
+                logger.warning("Vision backend cannot caption images: %s", exc)
+                break
+            except LLMError as exc:
+                consecutive_failures += 1
                 logger.warning("Captioning frame at %.1fs failed: %s", keyframe.timestamp, exc)
+                # Circuit breaker: repeated failures usually mean the quota is exhausted, and
+                # every further call would only burn requests and time.
+                if consecutive_failures >= max_failures:
+                    logger.warning("Stopping frame captioning after %d consecutive failures",
+                                   consecutive_failures)
+                    break
                 continue
             if not caption or caption.upper().startswith("NONE"):
                 continue

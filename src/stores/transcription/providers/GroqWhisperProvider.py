@@ -4,6 +4,7 @@ import groq
 
 from stores.llm import ProviderConfigError
 from stores.llm.providers.GroqProvider import is_transient_groq_error
+from stores.llm.rate_limit import shared_limiter
 from stores.llm.retry import call_with_retry
 
 from ..TranscriptionInterface import (
@@ -26,12 +27,13 @@ class GroqWhisperProvider(TranscriptionInterface):
     name = "groq-whisper"
 
     def __init__(self, api_key: str, model_id: str = "whisper-large-v3-turbo",
-                 max_retries: int = 3):
+                 max_retries: int = 3, requests_per_minute: float = 0):
         if not api_key:
             raise ProviderConfigError("GROQ_API_KEY is required for the GROQ transcription backend")
         self.client = groq.Groq(api_key=api_key, max_retries=0)
         self.model_id = model_id
         self.max_retries = max_retries
+        self.limiter = shared_limiter(f"groq-whisper:{model_id}", requests_per_minute)
 
     def transcribe(self, audio_path: str, language: str | None = None) -> TranscriptionResult:
         size = os.path.getsize(audio_path)
@@ -57,6 +59,7 @@ class GroqWhisperProvider(TranscriptionInterface):
                 provider=self.name,
                 is_transient=is_transient_groq_error,
                 max_attempts=self.max_retries,
+                limiter=self.limiter,
             )
         except Exception as exc:
             raise TranscriptionError(f"Groq transcription failed: {exc}") from exc
