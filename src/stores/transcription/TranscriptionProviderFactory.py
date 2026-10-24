@@ -1,6 +1,7 @@
 from enum import StrEnum
 
 from helpers.config import Settings
+from stores.llm import ProviderConfigError
 
 from .TranscriptionInterface import TranscriptionInterface
 
@@ -33,4 +34,4 @@ class TranscriptionProviderFactory:
                 max_retries=s.LLM_MAX_RETRIES,
             )
 
-        raise ValueError(f"Unsupported transcription backend: {backend!r}")
+        raise ProviderConfigError(f"Unsupported transcription backend: {backend!r}")

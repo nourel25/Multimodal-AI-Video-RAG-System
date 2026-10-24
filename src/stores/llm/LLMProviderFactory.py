@@ -2,7 +2,7 @@ from helpers.config import Settings
 
 from .FallbackLLMProvider import FallbackLLMProvider
 from .LLMEnums import LLMBackend
-from .LLMInterface import LLMInterface
+from .LLMInterface import LLMInterface, ProviderConfigError
 
 
 class LLMProviderFactory:
@@ -29,7 +29,7 @@ class LLMProviderFactory:
             from .providers.GroqProvider import GroqProvider
             model = s.GROQ_VISION_MODEL if vision else s.GROQ_MODEL
             if not model:
-                raise ValueError("GROQ_VISION_MODEL must be set to use Groq for vision")
+                raise ProviderConfigError("GROQ_VISION_MODEL must be set to use Groq for vision")
             return GroqProvider(api_key=s.GROQ_API_KEY, model_id=model, **common)
 
         if backend == LLMBackend.GEMINI.value:
@@ -37,7 +37,7 @@ class LLMProviderFactory:
             model = s.GEMINI_VISION_MODEL if vision else s.GEMINI_MODEL
             return GeminiProvider(api_key=s.GEMINI_API_KEY, model_id=model, **common)
 
-        raise ValueError(f"Unsupported LLM backend: {backend!r}")
+        raise ProviderConfigError(f"Unsupported LLM backend: {backend!r}")
 
     def create_generation_client(self) -> LLMInterface:
         primary = self.create(self.settings.GENERATION_BACKEND)

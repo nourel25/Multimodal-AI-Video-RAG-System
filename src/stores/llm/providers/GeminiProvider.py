@@ -4,7 +4,7 @@ from google import genai
 from google.genai import errors, types
 
 from ..LLMEnums import ChatRole
-from ..LLMInterface import ChatMessage, LLMError, LLMInterface
+from ..LLMInterface import ChatMessage, LLMError, LLMInterface, ProviderConfigError
 from ..retry import call_with_retry
 
 
@@ -22,7 +22,7 @@ class GeminiProvider(LLMInterface):
     def __init__(self, api_key: str, model_id: str, *, temperature: float = 0.1,
                  max_tokens: int = 1024, max_retries: int = 3):
         if not api_key:
-            raise ValueError("GEMINI_API_KEY is required for the GEMINI backend")
+            raise ProviderConfigError("GEMINI_API_KEY is required for the GEMINI backend")
         self.client = genai.Client(api_key=api_key)
         self.model_id = model_id
         self.temperature = temperature

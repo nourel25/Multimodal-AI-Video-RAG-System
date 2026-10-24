@@ -37,3 +37,4 @@ class ResponseSignal(Enum):
     VALIDATION_ERROR = "validation_error"
     INTERNAL_ERROR = "internal_error"
     PROVIDER_ERROR = "provider_error"
+    PROVIDER_NOT_CONFIGURED = "provider_not_configured"

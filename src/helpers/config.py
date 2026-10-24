@@ -33,15 +33,15 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
 
     # ========================= Transcription =========================
-    TRANSCRIPTION_BACKEND: str = "LOCAL"  # LOCAL | GROQ
+    TRANSCRIPTION_BACKEND: str = "GROQ"  # GROQ | LOCAL
     WHISPER_LOCAL_MODEL: str = "small"
     WHISPER_DEVICE: str = "cpu"
     WHISPER_COMPUTE_TYPE: str = "int8"
     GROQ_WHISPER_MODEL: str = "whisper-large-v3-turbo"
 
     # ========================= Generation =========================
-    GENERATION_BACKEND: str = "OLLAMA"  # OLLAMA | GROQ | GEMINI
-    GENERATION_FALLBACK_BACKEND: str = ""
+    GENERATION_BACKEND: str = "GROQ"  # GROQ | GEMINI | OLLAMA
+    GENERATION_FALLBACK_BACKEND: str = "GEMINI"
     GENERATION_TEMPERATURE: float = 0.1
     GENERATION_MAX_TOKENS: int = 1024
     LLM_MAX_RETRIES: int = 3
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     GEMINI_VISION_MODEL: str = "gemini-3.6-flash"
 
     # ========================= Vision =========================
-    VISION_BACKEND: str = ""  # empty disables the visual pipeline; OLLAMA | GROQ | GEMINI
+    VISION_BACKEND: str = "GEMINI"  # GEMINI | OLLAMA | GROQ; empty disables frame analysis
     VISION_MAX_FRAMES: int = 24
     VISION_SCENE_THRESHOLD: float = 27.0
     VISION_MIN_SCENE_SECONDS: float = 4.0

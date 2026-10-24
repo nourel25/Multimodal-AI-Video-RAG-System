@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from models.enums import ResponseSignal
-from stores.llm import LLMError
+from stores.llm import LLMError, ProviderConfigError
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,11 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def llm_error_handler(_: Request, exc: LLMError):
         logger.error("LLM provider error: %s", exc)
         return _error(status.HTTP_502_BAD_GATEWAY, ResponseSignal.PROVIDER_ERROR, str(exc))
+
+    @app.exception_handler(ProviderConfigError)
+    async def provider_config_handler(_: Request, exc: ProviderConfigError):
+        return _error(status.HTTP_503_SERVICE_UNAVAILABLE, ResponseSignal.PROVIDER_NOT_CONFIGURED,
+                      str(exc))
 
     @app.exception_handler(Exception)
     async def unhandled_error_handler(_: Request, exc: Exception):

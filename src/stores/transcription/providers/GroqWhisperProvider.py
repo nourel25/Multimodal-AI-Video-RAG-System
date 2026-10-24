@@ -2,6 +2,7 @@ import os
 
 import groq
 
+from stores.llm import ProviderConfigError
 from stores.llm.providers.GroqProvider import is_transient_groq_error
 from stores.llm.retry import call_with_retry
 
@@ -27,7 +28,7 @@ class GroqWhisperProvider(TranscriptionInterface):
     def __init__(self, api_key: str, model_id: str = "whisper-large-v3-turbo",
                  max_retries: int = 3):
         if not api_key:
-            raise ValueError("GROQ_API_KEY is required for the GROQ transcription backend")
+            raise ProviderConfigError("GROQ_API_KEY is required for the GROQ transcription backend")
         self.client = groq.Groq(api_key=api_key, max_retries=0)
         self.model_id = model_id
         self.max_retries = max_retries

@@ -3,7 +3,7 @@ from collections.abc import Iterator
 
 import groq
 
-from ..LLMInterface import ChatMessage, LLMError, LLMInterface
+from ..LLMInterface import ChatMessage, LLMError, LLMInterface, ProviderConfigError
 from ..retry import call_with_retry
 
 
@@ -19,7 +19,7 @@ class GroqProvider(LLMInterface):
     def __init__(self, api_key: str, model_id: str, *, temperature: float = 0.1,
                  max_tokens: int = 1024, max_retries: int = 3):
         if not api_key:
-            raise ValueError("GROQ_API_KEY is required for the GROQ backend")
+            raise ProviderConfigError("GROQ_API_KEY is required for the GROQ backend")
         # Retries are handled by call_with_retry so all providers behave the same way.
         self.client = groq.Groq(api_key=api_key, max_retries=0)
         self.model_id = model_id

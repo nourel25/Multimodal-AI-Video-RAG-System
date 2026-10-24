@@ -209,3 +209,18 @@ async def test_api_key_is_enforced_when_configured(client, container):
     ok = await client.post(url, json={"youtube_urls": [VIDEO]}, headers={"X-API-Key": "secret"})
     assert ok.status_code == 201
     assert (await client.get("/api/v1/health")).status_code == 200  # health stays public
+
+
+async def test_missing_api_key_is_a_clear_503(client, add_and_process, container):
+    await add_and_process()
+    container.__dict__.pop("generation_client")  # rebuilt lazily from settings, as in production
+    container.settings.GROQ_API_KEY = ""
+    container.settings.GENERATION_BACKEND = "GROQ"
+    container.settings.GENERATION_FALLBACK_BACKEND = ""
+    response = await client.post("/api/v1/users/alice/answer", json={"query": "Starlette"})
+    assert response.status_code == 503
+    assert response.json()["signal"] == "provider_not_configured"
+    assert "GROQ_API_KEY" in response.json()["detail"]
+
+    health = (await client.get("/api/v1/health")).json()
+    assert "GROQ_API_KEY" in health["missing_api_keys"]

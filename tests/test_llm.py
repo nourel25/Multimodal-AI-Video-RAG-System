@@ -73,7 +73,7 @@ def test_factory_requires_api_keys_and_known_backends():
 
 def test_factory_wraps_generation_client_with_fallback():
     settings = Settings(_env_file=None, GENERATION_BACKEND="GROQ", GROQ_API_KEY="k",
-                        GENERATION_FALLBACK_BACKEND="OLLAMA")
+                        GENERATION_FALLBACK_BACKEND="OLLAMA", VISION_BACKEND="")
     client = LLMProviderFactory(settings).create_generation_client()
     assert isinstance(client, FallbackLLMProvider)
     assert client.name == "groq->ollama"

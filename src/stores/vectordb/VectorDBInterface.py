@@ -8,7 +8,7 @@ from .VectorDBEnums import SearchMode
 
 @dataclass
 class VectorRecord:
-    id: str
+    id: str | int
     dense: list[float]
     sparse: SparseVector | None = None
     payload: dict = field(default_factory=dict)
@@ -16,7 +16,7 @@ class VectorRecord:
 
 @dataclass
 class ScoredRecord:
-    id: str
+    id: str | int
     score: float
     payload: dict
 

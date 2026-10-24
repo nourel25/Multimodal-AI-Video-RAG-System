@@ -17,6 +17,10 @@ class LLMError(RuntimeError):
         self.transient = transient
 
 
+class ProviderConfigError(ValueError):
+    """A backend was selected but is not usable as configured (e.g. missing API key)."""
+
+
 class LLMInterface(ABC):
     """Chat + vision interface every generation provider implements.
 
